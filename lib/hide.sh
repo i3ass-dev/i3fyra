@@ -1,9 +1,10 @@
 #!/bin/env bash
 
 containerhide(){
-  local trg tfam famchk
+  local trg tfam
 
   trg=$1
+
 
   [[ ${#trg} -gt 1 ]] && multihide "$trg" && return
 
