@@ -29,14 +29,16 @@ main(){
 
   ${cmd} "${target:-}" # run command
 
-  [[ $cmd = windowmove ]] && [[ -z ${i3list[SIBFOC]} ]] \
-      && i3-msg -q "[con_id=${i3list[AWC]}]" focus
+  {
+    [[ $cmd = windowmove ]] && [[ -z ${i3list[SIBFOC]} ]] \
+        && i3-msg -q "[con_id=${i3list[AWC]}]" focus
 
-  [[ $cmd = togglefloat ]] \
-      && i3-msg -q "[con_id=${i3list[AWC]}]" focus
+    [[ $cmd = togglefloat ]] \
+        && i3-msg -q "[con_id=${i3list[AWC]}]" focus
 
-  [[ -n ${i3list[SIBFOC]:-} ]] \
-    && i3-msg -q "[con_mark=i34${i3list[SIBFOC]}]" focus child
+    [[ -n ${i3list[SIBFOC]:-} ]] \
+      && i3-msg -q "[con_mark=i34${i3list[SIBFOC]}]" focus child
+  }  > /dev/null 2>&1
   
 }
 
