@@ -18,26 +18,27 @@ layoutcreate(){
     messy "[con_mark=i34XAB]" unmark
   fi
 
-  i3gw gurra  > /dev/null 2>&1
+  # i3gw gurra  > /dev/null 2>&1
+  ((_dummy)) || dummywindow
   
-  messy "[con_mark=gurra]" \
+  messy "[con_id=$_dummy]" \
     split v, layout tabbed
   
   messy "[con_mark=i34${trg}]" \
     move to workspace "${i3list[WSA]}", \
     floating disable, \
-    move to mark gurra
+    move to mark "$_dummy"
 
-  messy "[con_mark=gurra]" focus parent
+  messy "[con_id=$_dummy]" focus parent
   messy mark i34X${fam}, focus parent
 
   if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    messy "[con_mark=gurra]" layout splith, split h
-    messy "[con_mark=gurra]" kill
+    messy "[con_id=$_dummy]" layout splith, split h
+    # messy "[con_id=$_dummy]" kill
     messy "[con_mark=i34XAC]" layout splitv, split v
   else
-    messy "[con_mark=gurra]" layout default, split v
-    messy "[con_mark=gurra]" kill
+    messy "[con_id=$_dummy]" layout default, split v
+    # messy "[con_id=$_dummy]" kill
     messy "[con_mark=i34XAB]" layout splith, split h
   fi
 

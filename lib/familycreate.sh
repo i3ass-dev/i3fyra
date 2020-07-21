@@ -26,24 +26,25 @@ familycreate(){
   fi
 
   messy "[con_mark=i34X${tfam}]" unmark
-  i3gw gurra  > /dev/null 2>&1
-  messy "[con_mark=gurra]" \
+  # i3gw gurra  > /dev/null 2>&1
+  ((_dummy)) || dummywindow
+  messy "[con_id=$_dummy]" \
     move to mark "i34X${ofam}", split v, layout tabbed
 
   messy "[con_mark=i34${trg}]" \
     move to workspace "${i3list[WSA]}", \
     floating disable, \
-    move to mark gurra
-  messy "[con_mark=gurra]" focus, focus parent
+    move to mark "$_dummy"
+  messy "[con_id=$_dummy]" focus, focus parent
   messy mark i34X${tfam}
 
   if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    messy "[con_mark=gurra]" layout splith, split h
-    messy "[con_mark=gurra]" kill
+    messy "[con_id=$_dummy]" layout splith, split h
+    # messy "[con_id=$_dummy]" kill
     messy "[con_mark=i34X${tfam}]" move down
   else
-    messy "[con_mark=gurra]" layout splitv, split v
-    messy "[con_mark=gurra]" kill
+    messy "[con_id=$_dummy]" layout splitv, split v
+    # messy "[con_id=$_dummy]" kill
     messy "[con_mark=i34X${tfam}]" move right
   fi
 

@@ -25,7 +25,8 @@ applysplits(){
     messy "[con_mark=${mrk}]" resize set "$dir" "$tsv" px
 
     i3list[S${tsn}]=${tsv}
-    i3var set "i34M${tsn}" ${tsv}
+    # i3var set "i34M${tsn}" ${tsv}
+    _v+=("i34M${tsn}" "${tsv}")
 
   done
 }

@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.576
+i3fyra - version: 0.597
 updated: 2020-07-21 by budRich
 EOB
 }
@@ -19,26 +19,26 @@ main(){
 
   __o[verbose]=1
 
-  ((__o[verbose])) && {
-    _stamp=$(date +%s%N)
-    ERM $'\n'
-  }
-
   trap 'cleanup' EXIT
 
   local cmd target
 
-  declare -A _m # bitwise masks _m[A]=1
-  declare -a _n # bitwise names _n[1]=A
+  declare -gA _m # bitwise masks _m[A]=1
+  declare -ga _n # bitwise names _n[1]=A
+  declare -ga _v # "i3var"s to set
 
-  declare -i _existing
-  declare -i _visible
-  declare -i _isvertical=0
+  declare -gi _existing
+  declare -gi _visible
+  declare -gi _isvertical=0
 
-  declare -i _famact # ?
+  declare -gi _famact # ?
 
-  declare -i _stamp _dummy
-  
+  declare -gi _stamp
+
+  ((__o[verbose])) && {
+    _stamp=$(date +%s%N)
+    ERM " "
+  }
 
   [[ ${I3FYRA_ORIENTATION,,} = vertical ]] \
     && _isvertical=1
@@ -209,7 +209,8 @@ applysplits(){
     messy "[con_mark=${mrk}]" resize set "$dir" "$tsv" px
 
     i3list[S${tsn}]=${tsv}
-    i3var set "i34M${tsn}" ${tsv}
+    # i3var set "i34M${tsn}" ${tsv}
+    _v+=("i34M${tsn}" "${tsv}")
 
   done
 }
@@ -238,14 +239,19 @@ bitwiseinit() {
 }
 
 cleanup() {
+
   ((_dummy)) \
-    && i3-msg -q "[con_id=$_dummy]" kill
+    && messy "[con_id=$_dummy]" kill
+
+  ((${#_v[@]})) && varset "${_v[@]}"
 
   ((__o[verbose])) && {
     _=${_n[1]}
+    _=$_isvertical
     local delta=$(( ($(date +%s%N)-_stamp) /1000 ))
     local time=$(((delta / 1000) % 1000))
     ERM  $'\n'"${time}ms"
+    ERM "dummy id: $_dummy"
     ERM "----------------------------"
   }
 }
@@ -259,15 +265,15 @@ containercreate(){
   # error can't create container without window
   [[ -z ${i3list[TWC]} ]] && exit 1
 
-  i3gw gurra  > /dev/null 2>&1
-  messy "[con_mark=gurra]" \
+  ((_dummy)) || dummywindow
+  # i3gw gurra  > /dev/null 2>&1
+  messy "[con_id=$_dummy]" \
     split h, layout tabbed
   messy "[con_id=${i3list[TWC]}]" \
-    floating disable, move to mark gurra
-  messy "[con_mark=gurra]" \
+    floating disable, move to mark "$_dummy"
+  messy "[con_id=$_dummy]" \
     focus, focus parent
   messy mark "i34${trg}"
-  messy "[con_mark=gurra]" kill
     
   # after creation, move cont to scratch
   messy "[con_mark=i34${trg}]" focus, floating enable, \
@@ -307,29 +313,34 @@ containerhide(){
 
   # if trg is last of it's fam, note it.
   # else focus sib
+    # && i3var set "i34F${tfam}" "$trg" \
   [[ ! ${tfam/$trg/} =~ [${i3list[LVI]}] ]] \
-    && i3var set "i34F${tfam}" "$trg" \
+    && _v+=("i34F${tfam}" "$trg") \
     || i3list[SIBFOC]=${tfam/$trg/}
 
   # note splits
   if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
     [[ -n ${i3list[SAC]} ]] && ((i3list[SAC]!=i3list[WFH])) && {
-      i3var set "i34MAC" "${i3list[SAC]}"
+      # i3var set "i34MAC" "${i3list[SAC]}"
+      _v+=("i34MAC" "${i3list[SAC]}")
       i3list[MAC]=${i3list[SAC]}
     }
 
     [[ -n ${i3list[S${tfam}]} ]] && ((${i3list[S${tfam}]}!=i3list[WFW])) && {
-      i3var set "i34M${tfam}" "${i3list[S${tfam}]}" 
+      # i3var set "i34M${tfam}" "${i3list[S${tfam}]}" 
+      _v+=("i34M${tfam}" "${i3list[S${tfam}]}")
       i3list[M${tfam}]=${i3list[S${tfam}]}
     }
   else
     [[ -n ${i3list[SAB]} ]] && ((i3list[SAB]!=i3list[WFW])) && {
-      i3var set "i34MAB" "${i3list[SAB]}"
+      _v+=("i34MAB" "${i3list[SAB]}")
+      # i3var set "i34MAB" "${i3list[SAB]}"
       i3list[MAB]=${i3list[SAB]}
     }
 
     [[ -n ${i3list[S${tfam}]} ]] && ((${i3list[S${tfam}]}!=i3list[WFH])) && {
-      i3var set "i34M${tfam}" "${i3list[S${tfam}]}" 
+      _v+=("i34M${tfam}" "${i3list[S${tfam}]}")
+      # i3var set "i34M${tfam}" "${i3list[S${tfam}]}" 
       i3list[M${tfam}]=${i3list[S${tfam}]}
     }
   fi
@@ -478,12 +489,16 @@ containershow(){
 
 dummywindow() {
 
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}()"
+
+  declare -gi _dummy
   local tmp
 
   tmp="$(i3-msg open)"
   _dummy="${tmp//[^0-9]/}"
 
-  i3-msg -q "[con_id=$_dummy]" floating disable
+  messy "[con_id=$_dummy]" \
+    floating disable, mark "$_dummy"
 }
 
 ERM(){ >&2 echo "$*"; }
@@ -516,24 +531,25 @@ familycreate(){
   fi
 
   messy "[con_mark=i34X${tfam}]" unmark
-  i3gw gurra  > /dev/null 2>&1
-  messy "[con_mark=gurra]" \
+  # i3gw gurra  > /dev/null 2>&1
+  ((_dummy)) || dummywindow
+  messy "[con_id=$_dummy]" \
     move to mark "i34X${ofam}", split v, layout tabbed
 
   messy "[con_mark=i34${trg}]" \
     move to workspace "${i3list[WSA]}", \
     floating disable, \
-    move to mark gurra
-  messy "[con_mark=gurra]" focus, focus parent
+    move to mark "$_dummy"
+  messy "[con_id=$_dummy]" focus, focus parent
   messy mark i34X${tfam}
 
   if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    messy "[con_mark=gurra]" layout splith, split h
-    messy "[con_mark=gurra]" kill
+    messy "[con_id=$_dummy]" layout splith, split h
+    # messy "[con_id=$_dummy]" kill
     messy "[con_mark=i34X${tfam}]" move down
   else
-    messy "[con_mark=gurra]" layout splitv, split v
-    messy "[con_mark=gurra]" kill
+    messy "[con_id=$_dummy]" layout splitv, split v
+    # messy "[con_id=$_dummy]" kill
     messy "[con_mark=i34X${tfam}]" move right
   fi
 
@@ -563,9 +579,12 @@ familyhide(){
     fi
   done
 
-  i3var set "i34F${tfam}" "${famchk}"
-  i3var set "i34MAB" "${i3list[SAB]}"
-  i3var set "i34M${tfam}" "${i3list[S${tfam}]}"
+  # i3var set "i34F${tfam}" "${famchk}"
+  # i3var set "i34MAB" "${i3list[SAB]}"
+  # i3var set "i34M${tfam}" "${i3list[S${tfam}]}"
+  _v+=("i34F${tfam}" "${famchk}")
+  _v+=("i34MAB" "${i3list[SAB]}")
+  _v+=("i34M${tfam}" "${i3list[S${tfam}]}")
 
 }
 
@@ -610,26 +629,27 @@ layoutcreate(){
     messy "[con_mark=i34XAB]" unmark
   fi
 
-  i3gw gurra  > /dev/null 2>&1
+  # i3gw gurra  > /dev/null 2>&1
+  ((_dummy)) || dummywindow
   
-  messy "[con_mark=gurra]" \
+  messy "[con_id=$_dummy]" \
     split v, layout tabbed
   
   messy "[con_mark=i34${trg}]" \
     move to workspace "${i3list[WSA]}", \
     floating disable, \
-    move to mark gurra
+    move to mark "$_dummy"
 
-  messy "[con_mark=gurra]" focus parent
+  messy "[con_id=$_dummy]" focus parent
   messy mark i34X${fam}, focus parent
 
   if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    messy "[con_mark=gurra]" layout splith, split h
-    messy "[con_mark=gurra]" kill
+    messy "[con_id=$_dummy]" layout splith, split h
+    # messy "[con_id=$_dummy]" kill
     messy "[con_mark=i34XAC]" layout splitv, split v
   else
-    messy "[con_mark=gurra]" layout default, split v
-    messy "[con_mark=gurra]" kill
+    messy "[con_id=$_dummy]" layout default, split v
+    # messy "[con_id=$_dummy]" kill
     messy "[con_mark=i34XAB]" layout splith, split h
   fi
 
@@ -736,11 +756,15 @@ swapmeet(){
       messy "[con_mark=i34tmp${k}]" mark "i34${acn[$k]}"
     done
     if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-      i3var set i3MAB "${i3list[MBD]}"
-      i3var set i3MCD "${i3list[MAC]}"
+      _v+=(i3MAB "${i3list[MBD]}")
+      _v+=(i3MCD "${i3list[MAC]}")
+      # i3var set i3MAB "${i3list[MBD]}"
+      # i3var set i3MCD "${i3list[MAC]}"
     else
-      i3var set i3MAC "${i3list[MBD]}"
-      i3var set i3MBD "${i3list[MAC]}"
+      _v+=(i3MAC "${i3list[MBD]}")
+      _v+=(i3MBD "${i3list[MAC]}")
+      # i3var set i3MAC "${i3list[MBD]}"
+      # i3var set i3MBD "${i3list[MAC]}"
     fi
   else # swap within family, rename siblings
     for (( i = 0; i < ${#i3list[AFF]}; i++ )); do
@@ -807,6 +831,29 @@ togglefloat(){
     # AWF == 0 && make AWC floating
     messy [con_id="${i3list[AWC]}"] floating enable
   fi
+}
+
+varset() {
+
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
+  
+  local key val json re mark
+
+  json=$(i3-msg -t get_marks)
+
+  while [[ -n $1 ]]; do
+    key=$1 val=$2
+    shift 2
+    re="\"(${key}=[^\"]+)\""
+    [[ $json =~ $re ]] && mark="${BASH_REMATCH[1]}"
+
+    if [[ -z $mark ]]; then
+      i3gw "${key}=${val}"
+      messy "[con_mark=${key}]" move scratchpad
+    else
+      messy "[con_mark=${key}]" mark "${key}=${val}"
+    fi
+  done
 }
 
 windowmove(){

@@ -4,26 +4,26 @@ main(){
 
   __o[verbose]=1
 
-  ((__o[verbose])) && {
-    _stamp=$(date +%s%N)
-    ERM $'\n'
-  }
-
   trap 'cleanup' EXIT
 
   local cmd target
 
-  declare -A _m # bitwise masks _m[A]=1
-  declare -a _n # bitwise names _n[1]=A
+  declare -gA _m # bitwise masks _m[A]=1
+  declare -ga _n # bitwise names _n[1]=A
+  declare -ga _v # "i3var"s to set
 
-  declare -i _existing
-  declare -i _visible
-  declare -i _isvertical=0
+  declare -gi _existing
+  declare -gi _visible
+  declare -gi _isvertical=0
 
-  declare -i _famact # ?
+  declare -gi _famact # ?
 
-  declare -i _stamp _dummy
-  
+  declare -gi _stamp
+
+  ((__o[verbose])) && {
+    _stamp=$(date +%s%N)
+    ERM " "
+  }
 
   [[ ${I3FYRA_ORIENTATION,,} = vertical ]] \
     && _isvertical=1

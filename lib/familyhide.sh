@@ -24,8 +24,11 @@ familyhide(){
     fi
   done
 
-  i3var set "i34F${tfam}" "${famchk}"
-  i3var set "i34MAB" "${i3list[SAB]}"
-  i3var set "i34M${tfam}" "${i3list[S${tfam}]}"
+  # i3var set "i34F${tfam}" "${famchk}"
+  # i3var set "i34MAB" "${i3list[SAB]}"
+  # i3var set "i34M${tfam}" "${i3list[S${tfam}]}"
+  _v+=("i34F${tfam}" "${famchk}")
+  _v+=("i34MAB" "${i3list[SAB]}")
+  _v+=("i34M${tfam}" "${i3list[S${tfam}]}")
 
 }

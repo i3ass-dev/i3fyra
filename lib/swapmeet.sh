@@ -64,11 +64,15 @@ swapmeet(){
       messy "[con_mark=i34tmp${k}]" mark "i34${acn[$k]}"
     done
     if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-      i3var set i3MAB "${i3list[MBD]}"
-      i3var set i3MCD "${i3list[MAC]}"
+      _v+=(i3MAB "${i3list[MBD]}")
+      _v+=(i3MCD "${i3list[MAC]}")
+      # i3var set i3MAB "${i3list[MBD]}"
+      # i3var set i3MCD "${i3list[MAC]}"
     else
-      i3var set i3MAC "${i3list[MBD]}"
-      i3var set i3MBD "${i3list[MAC]}"
+      _v+=(i3MAC "${i3list[MBD]}")
+      _v+=(i3MBD "${i3list[MAC]}")
+      # i3var set i3MAC "${i3list[MBD]}"
+      # i3var set i3MBD "${i3list[MAC]}"
     fi
   else # swap within family, rename siblings
     for (( i = 0; i < ${#i3list[AFF]}; i++ )); do

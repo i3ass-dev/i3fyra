@@ -27,29 +27,34 @@ containerhide(){
 
   # if trg is last of it's fam, note it.
   # else focus sib
+    # && i3var set "i34F${tfam}" "$trg" \
   [[ ! ${tfam/$trg/} =~ [${i3list[LVI]}] ]] \
-    && i3var set "i34F${tfam}" "$trg" \
+    && _v+=("i34F${tfam}" "$trg") \
     || i3list[SIBFOC]=${tfam/$trg/}
 
   # note splits
   if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
     [[ -n ${i3list[SAC]} ]] && ((i3list[SAC]!=i3list[WFH])) && {
-      i3var set "i34MAC" "${i3list[SAC]}"
+      # i3var set "i34MAC" "${i3list[SAC]}"
+      _v+=("i34MAC" "${i3list[SAC]}")
       i3list[MAC]=${i3list[SAC]}
     }
 
     [[ -n ${i3list[S${tfam}]} ]] && ((${i3list[S${tfam}]}!=i3list[WFW])) && {
-      i3var set "i34M${tfam}" "${i3list[S${tfam}]}" 
+      # i3var set "i34M${tfam}" "${i3list[S${tfam}]}" 
+      _v+=("i34M${tfam}" "${i3list[S${tfam}]}")
       i3list[M${tfam}]=${i3list[S${tfam}]}
     }
   else
     [[ -n ${i3list[SAB]} ]] && ((i3list[SAB]!=i3list[WFW])) && {
-      i3var set "i34MAB" "${i3list[SAB]}"
+      _v+=("i34MAB" "${i3list[SAB]}")
+      # i3var set "i34MAB" "${i3list[SAB]}"
       i3list[MAB]=${i3list[SAB]}
     }
 
     [[ -n ${i3list[S${tfam}]} ]] && ((${i3list[S${tfam}]}!=i3list[WFH])) && {
-      i3var set "i34M${tfam}" "${i3list[S${tfam}]}" 
+      _v+=("i34M${tfam}" "${i3list[S${tfam}]}")
+      # i3var set "i34M${tfam}" "${i3list[S${tfam}]}" 
       i3list[M${tfam}]=${i3list[S${tfam}]}
     }
   fi
