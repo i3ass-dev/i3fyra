@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.597
+i3fyra - version: 0.598
 updated: 2020-07-21 by budRich
 EOB
 }
@@ -23,9 +23,10 @@ main(){
 
   local cmd target
 
-  declare -gA _m # bitwise masks _m[A]=1
-  declare -ga _n # bitwise names _n[1]=A
-  declare -ga _v # "i3var"s to set
+  declare -gA _m   # bitwise masks _m[A]=1
+  declare -ga _n   # bitwise names _n[1]=A
+  declare -ga _v   # "i3var"s to set
+  declare -ga _msg # i3-msg's
 
   declare -gi _existing
   declare -gi _visible
@@ -244,6 +245,15 @@ cleanup() {
     && messy "[con_id=$_dummy]" kill
 
   ((${#_v[@]})) && varset "${_v[@]}"
+
+  ((${#_msg[@]})) && {
+    if ((__o[verbose])); then
+      ERM "MSG ${_msg[*]}"
+      i3-msg "${_msg[@]}"
+    else
+      i3-msg -q "${_msg[@]}"
+    fi
+  }
 
   ((__o[verbose])) && {
     _=${_n[1]}
@@ -656,8 +666,9 @@ layoutcreate(){
 }
 
 messy() {
-  ERM "m $*"
-  i3-msg -q "$@"
+  ((__o[verbose])) && ERM "m $*"
+  _msg+=("$*;")
+  # i3-msg -q "$@"
 }
 
 multihide(){
@@ -804,7 +815,7 @@ togglefloat(){
 
     # WSA != i3fyra && normal tiling
     if ((i3list[WSA]!=i3list[WSF])); then
-      messy [con_id="${i3list[AWC]}"] floating disable
+      messy "[con_id=${i3list[AWC]}]" floating disable
       return
     fi
 
@@ -821,7 +832,7 @@ togglefloat(){
 
     if [[ $trg =~ [${i3list[LEX]:-}] ]]; then
       containershow "$trg"
-      messy [con_id="${i3list[AWC]}"] floating disable, \
+      messy "[con_id=${i3list[AWC]}]" floating disable, \
         move to mark "i34${trg}"
     else
       # if $trg container doesn't exist, create it
@@ -829,14 +840,14 @@ togglefloat(){
     fi
   else
     # AWF == 0 && make AWC floating
-    messy [con_id="${i3list[AWC]}"] floating enable
+    messy "[con_id=${i3list[AWC]}]" floating enable
   fi
 }
 
 varset() {
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
-  
+
   local key val json re mark
 
   json=$(i3-msg -t get_marks)
