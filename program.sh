@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.562
+i3fyra - version: 0.574
 updated: 2020-07-21 by budRich
 EOB
 }
@@ -229,6 +229,88 @@ bitwiseinit() {
   done
 }
 
+containercreate(){
+
+  local trg=$1
+
+  # error can't create container without window
+  [[ -z ${i3list[TWC]} ]] && exit 1
+
+  i3gw gurra  > /dev/null 2>&1
+  i3-msg -q "[con_mark=gurra]" \
+    split h, layout tabbed
+  i3-msg -q "[con_id=${i3list[TWC]}]" \
+    floating disable, move to mark gurra
+  i3-msg -q "[con_mark=gurra]" \
+    focus, focus parent
+  i3-msg -q mark "i34${trg}"
+  i3-msg -q "[con_mark=gurra]" kill
+    
+  # after creation, move cont to scratch
+  i3-msg -q "[con_mark=i34${trg}]" focus, floating enable, \
+    move absolute position 0 px 0 px, \
+    resize set $((i3list[WFW]/2)) px $((i3list[WFH]/2)) px, \
+    move scratchpad
+  # add to trg to hid
+  i3list[LHI]+=$trg
+  # run container show to show container
+  containershow "$trg"
+}
+
+containerhide(){
+  local trg tfam
+
+  trg=$1
+
+
+  [[ ${#trg} -gt 1 ]] && multihide "$trg" && return
+
+  [[ $trg =~ A|C ]] && tfam=AC || tfam=BD
+  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+    [[ $trg =~ A|B ]] && tfam=AB || tfam=CD
+  fi
+
+  i3-msg -q "[con_mark=i34${trg}]" focus, floating enable, \
+    move absolute position 0 px 0 px, \
+    resize set $((i3list[WFW]/2)) px $((i3list[WFH]/2)) px, \
+    move scratchpad
+  # add to trg to hid
+  i3list[LHI]+=$trg
+  i3list[LVI]=${i3list[LVI]/$trg/}
+  i3list[LVI]=${i3list[LVI]:-X}
+
+  # if trg is last of it's fam, note it.
+  # else focus sib
+  [[ ! ${tfam/$trg/} =~ [${i3list[LVI]}] ]] \
+    && i3var set "i34F${tfam}" "$trg" \
+    || i3list[SIBFOC]=${tfam/$trg/}
+
+  # note splits
+  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+    [[ -n ${i3list[SAC]} ]] && ((i3list[SAC]!=i3list[WFH])) && {
+      i3var set "i34MAC" "${i3list[SAC]}"
+      i3list[MAC]=${i3list[SAC]}
+    }
+
+    [[ -n ${i3list[S${tfam}]} ]] && ((${i3list[S${tfam}]}!=i3list[WFW])) && {
+      i3var set "i34M${tfam}" "${i3list[S${tfam}]}" 
+      i3list[M${tfam}]=${i3list[S${tfam}]}
+    }
+  else
+    [[ -n ${i3list[SAB]} ]] && ((i3list[SAB]!=i3list[WFW])) && {
+      i3var set "i34MAB" "${i3list[SAB]}"
+      i3list[MAB]=${i3list[SAB]}
+    }
+
+    [[ -n ${i3list[S${tfam}]} ]] && ((${i3list[S${tfam}]}!=i3list[WFH])) && {
+      i3var set "i34M${tfam}" "${i3list[S${tfam}]}" 
+      i3list[M${tfam}]=${i3list[S${tfam}]}
+    }
+  fi
+}
+
+
+
 containershow(){
   # show target ($1/trg) container (A|B|C|D)
   # if it already is visible, do nothing.
@@ -365,73 +447,9 @@ containershow(){
   esac
 }
 
-layoutcreate(){
-  local trg fam
-
-  trg=$1
-
-  i3-msg -q workspace "${i3list[WSF]}"
-
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    [[ $trg =~ A|B ]] && fam=AB || fam=CD 
-    i3-msg -q "[con_mark=i34XAC]" unmark
-  else
-    [[ $trg =~ A|C ]] && fam=AC || fam=BD
-    i3-msg -q "[con_mark=i34XAB]" unmark
-  fi
-
-  i3gw gurra  > /dev/null 2>&1
-  
-  i3-msg -q "[con_mark=gurra]" \
-    split v, layout tabbed
-  
-  i3-msg -q "[con_mark=i34${trg}]" \
-    move to workspace "${i3list[WSA]}", \
-    floating disable, \
-    move to mark gurra
-
-  i3-msg -q "[con_mark=gurra]" focus parent
-  i3-msg -q mark i34X${fam}, focus parent
-
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    i3-msg -q "[con_mark=gurra]" layout splith, split h
-    i3-msg -q "[con_mark=gurra]" kill
-    i3-msg -q "[con_mark=i34XAC]" layout splitv, split v
-  else
-    i3-msg -q "[con_mark=gurra]" layout default, split v
-    i3-msg -q "[con_mark=gurra]" kill
-    i3-msg -q "[con_mark=i34XAB]" layout splith, split h
-  fi
-
-}
-
-containercreate(){
-
-  local trg=$1
-
-  # error can't create container without window
-  [[ -z ${i3list[TWC]} ]] && exit 1
-
-  i3gw gurra  > /dev/null 2>&1
-  i3-msg -q "[con_mark=gurra]" \
-    split h, layout tabbed
-  i3-msg -q "[con_id=${i3list[TWC]}]" \
-    floating disable, move to mark gurra
-  i3-msg -q "[con_mark=gurra]" \
-    focus, focus parent
-  i3-msg -q mark "i34${trg}"
-  i3-msg -q "[con_mark=gurra]" kill
-    
-  # after creation, move cont to scratch
-  i3-msg -q "[con_mark=i34${trg}]" focus, floating enable, \
-    move absolute position 0 px 0 px, \
-    resize set $((i3list[WFW]/2)) px $((i3list[WFH]/2)) px, \
-    move scratchpad
-  # add to trg to hid
-  i3list[LHI]+=$trg
-  # run container show to show container
-  containershow "$trg"
-}
+ERM(){ >&2 echo "$*"; }
+ERR(){ >&2 echo "[WARNING]" "$*"; }
+ERX(){ >&2 echo "[ERROR]" "$*" && exit 1 ; }
 
 familycreate(){
   local trg tfam ofam
@@ -479,31 +497,6 @@ familycreate(){
 
 }
 
-ERM(){ >&2 echo "$*"; }
-ERR(){ >&2 echo "[WARNING]" "$*"; }
-ERX(){ >&2 echo "[ERROR]" "$*" && exit 1 ; }
-
-familyshow(){
-
-  local fam=$1
-  local tfammem="${i3list[F${fam}]}"
-  # F${fam} - family memory
-
-  _famact=1
-  for (( i = 0; i < ${#tfammem}; i++ )); do
-    [[ ${tfammem:$i:1} =~ [${i3list[LHI]}] ]] \
-      && containershow "${tfammem:$i:1}"
-  done
-
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    i3list[SAC]=$((i3list[WFH]/2))
-    applysplits "AC=${i3list[MAC]}"
-  else
-    i3list[SAB]=$((i3list[WFW]/2))
-    applysplits "AB=${i3list[MAB]}"
-  fi
-}
-
 familyhide(){
   local tfam=$1
   local trg famchk tfammem i
@@ -531,57 +524,70 @@ familyhide(){
 
 }
 
+familyshow(){
 
-containerhide(){
-  local trg tfam
+  local fam=$1
+  local tfammem="${i3list[F${fam}]}"
+  # F${fam} - family memory
+
+  _famact=1
+  for (( i = 0; i < ${#tfammem}; i++ )); do
+    [[ ${tfammem:$i:1} =~ [${i3list[LHI]}] ]] \
+      && containershow "${tfammem:$i:1}"
+  done
+
+  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+    i3list[SAC]=$((i3list[WFH]/2))
+    applysplits "AC=${i3list[MAC]}"
+  else
+    i3list[SAB]=$((i3list[WFW]/2))
+    applysplits "AB=${i3list[MAB]}"
+  fi
+}
+
+layoutcreate(){
+  local trg fam
 
   trg=$1
 
+  i3-msg -q workspace "${i3list[WSF]}"
 
-  [[ ${#trg} -gt 1 ]] && multihide "$trg" && return
-
-  [[ $trg =~ A|C ]] && tfam=AC || tfam=BD
   if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    [[ $trg =~ A|B ]] && tfam=AB || tfam=CD
-  fi
-
-  i3-msg -q "[con_mark=i34${trg}]" focus, floating enable, \
-    move absolute position 0 px 0 px, \
-    resize set $((i3list[WFW]/2)) px $((i3list[WFH]/2)) px, \
-    move scratchpad
-  # add to trg to hid
-  i3list[LHI]+=$trg
-  i3list[LVI]=${i3list[LVI]/$trg/}
-  i3list[LVI]=${i3list[LVI]:-X}
-
-  # if trg is last of it's fam, note it.
-  # else focus sib
-  [[ ! ${tfam/$trg/} =~ [${i3list[LVI]}] ]] \
-    && i3var set "i34F${tfam}" "$trg" \
-    || i3list[SIBFOC]=${tfam/$trg/}
-
-  # note splits
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    [[ -n ${i3list[SAC]} ]] && ((i3list[SAC]!=i3list[WFH])) && {
-      i3var set "i34MAC" "${i3list[SAC]}"
-      i3list[MAC]=${i3list[SAC]}
-    }
-
-    [[ -n ${i3list[S${tfam}]} ]] && ((${i3list[S${tfam}]}!=i3list[WFW])) && {
-      i3var set "i34M${tfam}" "${i3list[S${tfam}]}" 
-      i3list[M${tfam}]=${i3list[S${tfam}]}
-    }
+    [[ $trg =~ A|B ]] && fam=AB || fam=CD 
+    i3-msg -q "[con_mark=i34XAC]" unmark
   else
-    [[ -n ${i3list[SAB]} ]] && ((i3list[SAB]!=i3list[WFW])) && {
-      i3var set "i34MAB" "${i3list[SAB]}"
-      i3list[MAB]=${i3list[SAB]}
-    }
-
-    [[ -n ${i3list[S${tfam}]} ]] && ((${i3list[S${tfam}]}!=i3list[WFH])) && {
-      i3var set "i34M${tfam}" "${i3list[S${tfam}]}" 
-      i3list[M${tfam}]=${i3list[S${tfam}]}
-    }
+    [[ $trg =~ A|C ]] && fam=AC || fam=BD
+    i3-msg -q "[con_mark=i34XAB]" unmark
   fi
+
+  i3gw gurra  > /dev/null 2>&1
+  
+  i3-msg -q "[con_mark=gurra]" \
+    split v, layout tabbed
+  
+  i3-msg -q "[con_mark=i34${trg}]" \
+    move to workspace "${i3list[WSA]}", \
+    floating disable, \
+    move to mark gurra
+
+  i3-msg -q "[con_mark=gurra]" focus parent
+  i3-msg -q mark i34X${fam}, focus parent
+
+  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+    i3-msg -q "[con_mark=gurra]" layout splith, split h
+    i3-msg -q "[con_mark=gurra]" kill
+    i3-msg -q "[con_mark=i34XAC]" layout splitv, split v
+  else
+    i3-msg -q "[con_mark=gurra]" layout default, split v
+    i3-msg -q "[con_mark=gurra]" kill
+    i3-msg -q "[con_mark=i34XAB]" layout splith, split h
+  fi
+
+}
+
+messy() {
+  ERM "msg: $*"
+  i3-msg -q "$@"
 }
 
 multihide(){
@@ -613,9 +619,98 @@ multihide(){
   done
 }
 
-messy() {
-  ERM "msg: $*"
-  i3-msg -q "$@"
+swapmeet(){
+  local m1=$1
+  local m2=$2
+  local i k cur
+  
+  # array with containers (k=current name, v=twin name)
+  declare -A acn 
+
+  i3-msg -q "[con_mark=${m1}]"  swap mark "${m2}", mark i34tmp
+  i3-msg -q "[con_mark=${m2}]"  mark "${m1}"
+  i3-msg -q "[con_mark=i34tmp]" mark "${m2}"
+
+  # if targets are families, remark all containers 
+  # with their twins
+  if [[ $m1 =~ X ]]; then
+    if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+      tspl="${i3list[SAC]}" tdim="${i3list[WFH]}"
+      tmrk=AC
+    else
+      tspl="${i3list[SAB]}" tdim="${i3list[WFW]}"
+      tmrk=AB
+    fi
+  else
+    tmrk="${i3list[AFF]}"
+    tspl="${i3list[S${tmrk}]}"
+    [[ ${I3FYRA_ORIENTATION,,} = vertical ]] \
+      && tdim="${i3list[WFW]}" \
+      || tdim="${i3list[WFH]}"
+  fi
+
+  { [[ -n $tspl ]] || ((tspl != tdim)) ;} && {
+    # invert split
+    tspl=$((tdim-tspl))
+    eval "applysplits '$tmrk=$tspl'"
+  }
+
+  # family swap, rename all existing containers with their twins
+  if [[ $m1 =~ X ]]; then 
+    for (( i = 0; i < ${#i3list[LEX]}; i++ )); do
+      cur=${i3list[LEX]:$i:1}
+      if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+        case $cur in
+          A ) acn[$cur]=C ;;
+          B ) acn[$cur]=D ;;
+          C ) acn[$cur]=A ;;
+          D ) acn[$cur]=B ;;
+        esac
+      else
+        case $cur in
+          A ) acn[$cur]=B ;;
+          B ) acn[$cur]=A ;;
+          C ) acn[$cur]=D ;;
+          D ) acn[$cur]=C ;;
+        esac
+      fi
+      i3-msg -q "[con_mark=i34${cur}]" mark "i34tmp${cur}"
+    done
+    for k in "${!acn[@]}"; do
+      i3-msg -q "[con_mark=i34tmp${k}]" mark "i34${acn[$k]}"
+    done
+    if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+      i3var set i3MAB "${i3list[MBD]}"
+      i3var set i3MCD "${i3list[MAC]}"
+    else
+      i3var set i3MAC "${i3list[MBD]}"
+      i3var set i3MBD "${i3list[MAC]}"
+    fi
+  else # swap within family, rename siblings
+    for (( i = 0; i < ${#i3list[AFF]}; i++ )); do
+      cur=${i3list[AFF]:$i:1}
+      if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+        case $cur in
+          A ) acn[$cur]=B ;;
+          B ) acn[$cur]=A ;;
+          C ) acn[$cur]=D ;;
+          D ) acn[$cur]=C ;;
+        esac
+      else
+        case $cur in
+          A ) acn[$cur]=C ;;
+          B ) acn[$cur]=D ;;
+          C ) acn[$cur]=A ;;
+          D ) acn[$cur]=B ;;
+        esac
+      fi
+      i3-msg -q "[con_mark=i34${cur}]" mark "i34tmp${cur}"
+    done
+    for k in "${!acn[@]}"; do
+      i3-msg -q "[con_mark=i34tmp${k}]" mark "i34${acn[$k]}"
+    done
+  fi
+
 }
 
 togglefloat(){
@@ -796,99 +891,7 @@ windowmove(){
   fi
 }
 
-swapmeet(){
-  local m1=$1
-  local m2=$2
-  local i k cur
-  
-  # array with containers (k=current name, v=twin name)
-  declare -A acn 
 
-  i3-msg -q "[con_mark=${m1}]"  swap mark "${m2}", mark i34tmp
-  i3-msg -q "[con_mark=${m2}]"  mark "${m1}"
-  i3-msg -q "[con_mark=i34tmp]" mark "${m2}"
-
-  # if targets are families, remark all containers 
-  # with their twins
-  if [[ $m1 =~ X ]]; then
-    if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-      tspl="${i3list[SAC]}" tdim="${i3list[WFH]}"
-      tmrk=AC
-    else
-      tspl="${i3list[SAB]}" tdim="${i3list[WFW]}"
-      tmrk=AB
-    fi
-  else
-    tmrk="${i3list[AFF]}"
-    tspl="${i3list[S${tmrk}]}"
-    [[ ${I3FYRA_ORIENTATION,,} = vertical ]] \
-      && tdim="${i3list[WFW]}" \
-      || tdim="${i3list[WFH]}"
-  fi
-
-  { [[ -n $tspl ]] || ((tspl != tdim)) ;} && {
-    # invert split
-    tspl=$((tdim-tspl))
-    eval "applysplits '$tmrk=$tspl'"
-  }
-
-  # family swap, rename all existing containers with their twins
-  if [[ $m1 =~ X ]]; then 
-    for (( i = 0; i < ${#i3list[LEX]}; i++ )); do
-      cur=${i3list[LEX]:$i:1}
-      if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-        case $cur in
-          A ) acn[$cur]=C ;;
-          B ) acn[$cur]=D ;;
-          C ) acn[$cur]=A ;;
-          D ) acn[$cur]=B ;;
-        esac
-      else
-        case $cur in
-          A ) acn[$cur]=B ;;
-          B ) acn[$cur]=A ;;
-          C ) acn[$cur]=D ;;
-          D ) acn[$cur]=C ;;
-        esac
-      fi
-      i3-msg -q "[con_mark=i34${cur}]" mark "i34tmp${cur}"
-    done
-    for k in "${!acn[@]}"; do
-      i3-msg -q "[con_mark=i34tmp${k}]" mark "i34${acn[$k]}"
-    done
-    if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-      i3var set i3MAB "${i3list[MBD]}"
-      i3var set i3MCD "${i3list[MAC]}"
-    else
-      i3var set i3MAC "${i3list[MBD]}"
-      i3var set i3MBD "${i3list[MAC]}"
-    fi
-  else # swap within family, rename siblings
-    for (( i = 0; i < ${#i3list[AFF]}; i++ )); do
-      cur=${i3list[AFF]:$i:1}
-      if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-        case $cur in
-          A ) acn[$cur]=B ;;
-          B ) acn[$cur]=A ;;
-          C ) acn[$cur]=D ;;
-          D ) acn[$cur]=C ;;
-        esac
-      else
-        case $cur in
-          A ) acn[$cur]=C ;;
-          B ) acn[$cur]=D ;;
-          C ) acn[$cur]=A ;;
-          D ) acn[$cur]=B ;;
-        esac
-      fi
-      i3-msg -q "[con_mark=i34${cur}]" mark "i34tmp${cur}"
-    done
-    for k in "${!acn[@]}"; do
-      i3-msg -q "[con_mark=i34tmp${k}]" mark "i34${acn[$k]}"
-    done
-  fi
-
-}
 
 declare -A __o
 options="$(
