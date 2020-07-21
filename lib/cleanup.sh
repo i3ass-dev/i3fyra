@@ -7,6 +7,15 @@ cleanup() {
 
   ((${#_v[@]})) && varset "${_v[@]}"
 
+  ((${#_msg[@]})) && {
+    if ((__o[verbose])); then
+      ERM "MSG ${_msg[*]}"
+      i3-msg "${_msg[@]}"
+    else
+      i3-msg -q "${_msg[@]}"
+    fi
+  }
+
   ((__o[verbose])) && {
     _=${_n[1]}
     _=$_isvertical

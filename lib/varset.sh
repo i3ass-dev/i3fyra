@@ -3,7 +3,7 @@
 varset() {
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
-  
+
   local key val json re mark
 
   json=$(i3-msg -t get_marks)

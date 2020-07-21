@@ -8,9 +8,10 @@ main(){
 
   local cmd target
 
-  declare -gA _m # bitwise masks _m[A]=1
-  declare -ga _n # bitwise names _n[1]=A
-  declare -ga _v # "i3var"s to set
+  declare -gA _m   # bitwise masks _m[A]=1
+  declare -ga _n   # bitwise names _n[1]=A
+  declare -ga _v   # "i3var"s to set
+  declare -ga _msg # i3-msg's
 
   declare -gi _existing
   declare -gi _visible

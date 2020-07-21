@@ -11,7 +11,7 @@ togglefloat(){
 
     # WSA != i3fyra && normal tiling
     if ((i3list[WSA]!=i3list[WSF])); then
-      messy [con_id="${i3list[AWC]}"] floating disable
+      messy "[con_id=${i3list[AWC]}]" floating disable
       return
     fi
 
@@ -28,7 +28,7 @@ togglefloat(){
 
     if [[ $trg =~ [${i3list[LEX]:-}] ]]; then
       containershow "$trg"
-      messy [con_id="${i3list[AWC]}"] floating disable, \
+      messy "[con_id=${i3list[AWC]}]" floating disable, \
         move to mark "i34${trg}"
     else
       # if $trg container doesn't exist, create it
@@ -36,6 +36,6 @@ togglefloat(){
     fi
   else
     # AWF == 0 && make AWC floating
-    messy [con_id="${i3list[AWC]}"] floating enable
+    messy "[con_id=${i3list[AWC]}]" floating enable
   fi
 }
