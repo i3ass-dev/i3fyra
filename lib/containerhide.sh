@@ -1,6 +1,9 @@
 #!/bin/bash
 
 containerhide(){
+
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
+  
   local trg tfam
 
   trg=$1
@@ -13,7 +16,7 @@ containerhide(){
     [[ $trg =~ A|B ]] && tfam=AB || tfam=CD
   fi
 
-  i3-msg -q "[con_mark=i34${trg}]" focus, floating enable, \
+  messy "[con_mark=i34${trg}]" focus, floating enable, \
     move absolute position 0 px 0 px, \
     resize set $((i3list[WFW]/2)) px $((i3list[WFH]/2)) px, \
     move scratchpad

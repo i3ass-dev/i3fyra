@@ -2,6 +2,8 @@
 
 familyshow(){
 
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
+
   local fam=$1
   local tfammem="${i3list[F${fam}]}"
   # F${fam} - family memory

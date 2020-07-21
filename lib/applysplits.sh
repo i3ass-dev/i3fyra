@@ -1,6 +1,9 @@
 #!/bin/env bash
 
 applysplits(){
+
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
+  
   local i tsn tsv par dir mrk
 
   for i in ${1}; do
@@ -19,7 +22,7 @@ applysplits(){
 
     ((tsv<0)) && tsv=$((par-(tsv*-1)))
 
-    i3-msg -q "[con_mark=${mrk}]" resize set "$dir" "$tsv" px
+    messy "[con_mark=${mrk}]" resize set "$dir" "$tsv" px
 
     i3list[S${tsn}]=${tsv}
     i3var set "i34M${tsn}" ${tsv}

@@ -2,7 +2,7 @@
 description: >
   An advanced, simple grid-based tiling layout
 updated:       2020-07-21
-version:       0.574
+version:       0.575
 author:        budRich
 repo:          https://github.com/budlabs/i3ass
 created:       2017-01-14
@@ -13,11 +13,11 @@ environ:
     I3FYRA_WS: 1
     I3FYRA_ORIENTATION: horizontal
 synopsis: |
-    --show|-s CONTAINER
-    --float|-a [--target|-t CRITERION]
-    --hide|-z CONTAINER
-    --layout|-l LAYOUT
-    --move|-m DIRECTION|CONTAINER [--speed|-p INT]  [--target|-t CRITERION]
+    --show|-s CONTAINER [--array ARRAY] [--verbose]
+    --float|-a [--target|-t CRITERION] [--array ARRAY] [--verbose]
+    --hide|-z CONTAINER [--array ARRAY] [--verbose]
+    --layout|-l LAYOUT [--array ARRAY] [--verbose]
+    --move|-m DIRECTION|CONTAINER [--speed|-p INT]  [--target|-t CRITERION] [--array ARRAY] [--verbose]
     --help|-h
     --version|-v
 ...

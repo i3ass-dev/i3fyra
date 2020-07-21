@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.574
+i3fyra - version: 0.575
 updated: 2020-07-21 by budRich
 EOB
 }
@@ -23,11 +23,11 @@ i3fyra - An advanced, simple grid-based tiling layout
 
 SYNOPSIS
 --------
-i3fyra --show|-s CONTAINER
-i3fyra --float|-a [--target|-t CRITERION]
-i3fyra --hide|-z CONTAINER
-i3fyra --layout|-l LAYOUT
-i3fyra --move|-m DIRECTION|CONTAINER [--speed|-p INT]  [--target|-t CRITERION]
+i3fyra --show|-s CONTAINER [--array ARRAY] [--verbose]
+i3fyra --float|-a [--target|-t CRITERION] [--array ARRAY] [--verbose]
+i3fyra --hide|-z CONTAINER [--array ARRAY] [--verbose]
+i3fyra --layout|-l LAYOUT [--array ARRAY] [--verbose]
+i3fyra --move|-m DIRECTION|CONTAINER [--speed|-p INT]  [--target|-t CRITERION] [--array ARRAY] [--verbose]
 i3fyra --help|-h
 i3fyra --version|-v
 
@@ -39,6 +39,10 @@ Show target container. If it doesn't exist, it
 will be created and current window will be put in
 it. If it is visible, nothing happens.
 
+
+--array ARRAY  
+
+--verbose  
 
 --float|-a  
 Autolayout. If current window is tiled: floating
@@ -117,7 +121,7 @@ declare -A __o
 options="$(
   getopt --name "[ERROR]:i3fyra" \
     --options "s:at:z:l:m:p:hv" \
-    --longoptions "show:,float,target:,hide:,layout:,move:,speed:,help,version," \
+    --longoptions "show:,array:,verbose,float,target:,hide:,layout:,move:,speed:,help,version," \
     -- "$@" || exit 98
 )"
 
@@ -127,6 +131,8 @@ unset options
 while true; do
   case "$1" in
     --show       | -s ) __o[show]="${2:-}" ; shift ;;
+    --array      ) __o[array]="${2:-}" ; shift ;;
+    --verbose    ) __o[verbose]=1 ;; 
     --float      | -a ) __o[float]=1 ;; 
     --target     | -t ) __o[target]="${2:-}" ; shift ;;
     --hide       | -z ) __o[hide]="${2:-}" ; shift ;;

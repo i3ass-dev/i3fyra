@@ -1,6 +1,9 @@
 #!/bin/bash
 
 swapmeet(){
+
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
+  
   local m1=$1
   local m2=$2
   local i k cur
@@ -8,9 +11,9 @@ swapmeet(){
   # array with containers (k=current name, v=twin name)
   declare -A acn 
 
-  i3-msg -q "[con_mark=${m1}]"  swap mark "${m2}", mark i34tmp
-  i3-msg -q "[con_mark=${m2}]"  mark "${m1}"
-  i3-msg -q "[con_mark=i34tmp]" mark "${m2}"
+  messy "[con_mark=${m1}]"  swap mark "${m2}", mark i34tmp
+  messy "[con_mark=${m2}]"  mark "${m1}"
+  messy "[con_mark=i34tmp]" mark "${m2}"
 
   # if targets are families, remark all containers 
   # with their twins
@@ -55,10 +58,10 @@ swapmeet(){
           D ) acn[$cur]=C ;;
         esac
       fi
-      i3-msg -q "[con_mark=i34${cur}]" mark "i34tmp${cur}"
+      messy "[con_mark=i34${cur}]" mark "i34tmp${cur}"
     done
     for k in "${!acn[@]}"; do
-      i3-msg -q "[con_mark=i34tmp${k}]" mark "i34${acn[$k]}"
+      messy "[con_mark=i34tmp${k}]" mark "i34${acn[$k]}"
     done
     if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
       i3var set i3MAB "${i3list[MBD]}"
@@ -85,10 +88,10 @@ swapmeet(){
           D ) acn[$cur]=B ;;
         esac
       fi
-      i3-msg -q "[con_mark=i34${cur}]" mark "i34tmp${cur}"
+      messy "[con_mark=i34${cur}]" mark "i34tmp${cur}"
     done
     for k in "${!acn[@]}"; do
-      i3-msg -q "[con_mark=i34tmp${k}]" mark "i34${acn[$k]}"
+      messy "[con_mark=i34tmp${k}]" mark "i34${acn[$k]}"
     done
   fi
 

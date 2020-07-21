@@ -1,6 +1,9 @@
 #!/bin/bash
 
 multihide(){
+
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
+  
   local trg real i
 
   trg="$1"

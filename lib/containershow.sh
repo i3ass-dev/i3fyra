@@ -1,6 +1,9 @@
 #!/bin/env bash
 
 containershow(){
+
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
+  
   # show target ($1/trg) container (A|B|C|D)
   # if it already is visible, do nothing.
   # if it doesn't exist, create it 
@@ -60,7 +63,7 @@ containershow(){
           famshow=1
         else
           # WSA = active workspace
-          i3-msg -q "[con_mark=i34${trg}]" \
+          messy "[con_mark=i34${trg}]" \
             move to workspace "${i3list[WSA]}", \
             floating disable, move to mark "$tdest"
         fi
@@ -86,7 +89,7 @@ containershow(){
           fi
 
           [[ ${#swap[@]} -gt 0 ]] && {
-            i3-msg -q "[con_mark=i34${swap[0]}]" \
+            messy "[con_mark=i34${swap[0]}]" \
               swap container with mark "i34${swap[1]}"
           }
 
@@ -113,7 +116,7 @@ containershow(){
           fi
 
           [[ ${#swap[@]} -gt 0 ]] && {
-            i3-msg -q "[con_mark=i34${swap[0]}]" \
+            messy "[con_mark=i34${swap[0]}]" \
               swap container with mark "i34${swap[1]}"
           }
 

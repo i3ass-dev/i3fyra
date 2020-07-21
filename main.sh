@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 main(){
+
+  __o[verbose]=1
   
   local cmd target
 
@@ -13,7 +15,13 @@ main(){
 
   declare -i _famact # ?
 
-  ERM fyra start $'\n'
+  declare -i _stamp
+
+  ((__o[verbose])) && {
+    _stamp=$(date +%s%N)
+    ERM $'\n'
+  }
+  
 
   [[ ${I3FYRA_ORIENTATION,,} = vertical ]] \
     && _isvertical=1
@@ -43,16 +51,10 @@ main(){
 
   bitwiseinit
 
-  ((__o[test])) && {
-    echo $_isvertical
-    ERM "v: $_visible"
-    ERM "e: $_existing"
-    exit
-  }
-
   [[ -z ${i3list[WSF]} ]] \
     && i3list[WSF]=${I3FYRA_WS:-${i3list[WSA]}}
 
+  ((__o[verbose])) && ERM cmd: "$cmd $target"
   ${cmd} "${target}" # run command
 
   {
@@ -66,8 +68,14 @@ main(){
       && i3-msg -q "[con_mark=i34${i3list[SIBFOC]}]" focus child
   }
 
-  ERM  $'\n'"fyra done ${_n[1]}"$'\n'
-  
+  ((__o[verbose])) && {
+    _=${_n[1]}
+    local delta=$(( ($(date +%s%N)-_stamp) /1000 ))
+    local time=$(((delta / 1000) % 1000))
+    ERM  $'\n'"${time}ms"
+    ERM "----------------------------"
+  }
+
 }
 
 ___source="$(readlink -f "${BASH_SOURCE[0]}")"  #bashbud

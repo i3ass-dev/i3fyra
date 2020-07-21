@@ -2,6 +2,7 @@
 
 windowmove(){
 
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   local dir=$1
   local trgcon wall trgpar ldir newcont
 
@@ -16,7 +17,7 @@ windowmove(){
     containershow "$dir"
 
     if ((newcont!=1)); then
-      i3-msg -q "[con_id=${i3list[TWC]}]" \
+      messy "[con_id=${i3list[TWC]}]" \
         focus, floating disable, \
         move to mark "i34${dir}", focus
     fi
@@ -109,13 +110,13 @@ windowmove(){
     
     [[ -n ${toswap[1]:-} ]] \
       && swapmeet "${toswap[0]}" "${toswap[1]}" \
-      && i3-msg -q "[con_id=${i3list[TWC]}]" focus
+      && messy "[con_id=${i3list[TWC]}]" focus
 
   else
     # trgpar is visible, if layout is tabbed just move it
     if [[ ${i3list[C${trgpar}L]} =~ tabbed|stacked ]]; then
       
-      i3-msg -q "[con_id=${i3list[TWC]}]" \
+      messy "[con_id=${i3list[TWC]}]" \
         focus, floating disable, \
         move to mark "i34${trgpar}", focus
 
@@ -123,22 +124,20 @@ windowmove(){
     elif [[ ${i3list[C${trgpar}L]} =~ splitv|splith ]]; then
       # target and current container is the same, move normaly
       if [[ $trgpar = "${i3list[TWP]}" ]]; then
-        i3-msg -q "[con_id=${i3list[TWC]}]" move "$ldir"
+        messy "[con_id=${i3list[TWC]}]" move "$ldir"
 
       # move below/to the right of the last child of the container  
       elif [[ $dir =~ l|u ]]; then
-        i3-msg -q "[con_id=${i3list[TWC]}]" \
+        messy "[con_id=${i3list[TWC]}]" \
           move to mark "i34${trgpar}", focus
 
       # move above/to the left of target container
       else
-        i3-msg -q "[con_id=${trgcon}]" mark i34tmp
-        i3-msg -q "[con_id=${i3list[TWC]}]" \
+        messy "[con_id=${trgcon}]" mark i34tmp
+        messy "[con_id=${i3list[TWC]}]" \
           move to mark "i34tmp", swap mark i34tmp
-        i3-msg -q "[con_id=${trgcon}]" unmark
+        messy "[con_id=${trgcon}]" unmark
       fi
     fi
   fi
 }
-
-

@@ -1,13 +1,16 @@
 #!/bin/bash
 
 familyhide(){
+
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
+  
   local tfam=$1
   local trg famchk tfammem i
 
   for (( i = 0; i < 2; i++ )); do
     trg=${tfam:$i:1}
     if [[ ${trg} =~ [${i3list[LVI]}] ]]; then
-      i3-msg -q "[con_mark=i34${trg}]" focus, floating enable, \
+      messy "[con_mark=i34${trg}]" focus, floating enable, \
         move absolute position 0 px 0 px, \
         resize set \
         "$((i3list[WFW]/2))" px \

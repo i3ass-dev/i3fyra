@@ -1,6 +1,6 @@
 #!/bin/bash
 
 messy() {
-  ERM "msg: $*"
+  ERM "m $*"
   i3-msg -q "$@"
 }
