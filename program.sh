@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.575
+i3fyra - version: 0.576
 updated: 2020-07-21 by budRich
 EOB
 }
@@ -18,7 +18,14 @@ EOB
 main(){
 
   __o[verbose]=1
-  
+
+  ((__o[verbose])) && {
+    _stamp=$(date +%s%N)
+    ERM $'\n'
+  }
+
+  trap 'cleanup' EXIT
+
   local cmd target
 
   declare -A _m # bitwise masks _m[A]=1
@@ -30,12 +37,7 @@ main(){
 
   declare -i _famact # ?
 
-  declare -i _stamp
-
-  ((__o[verbose])) && {
-    _stamp=$(date +%s%N)
-    ERM $'\n'
-  }
+  declare -i _stamp _dummy
   
 
   [[ ${I3FYRA_ORIENTATION,,} = vertical ]] \
@@ -69,7 +71,6 @@ main(){
   [[ -z ${i3list[WSF]} ]] \
     && i3list[WSF]=${I3FYRA_WS:-${i3list[WSA]}}
 
-  ((__o[verbose])) && ERM cmd: "$cmd $target"
   ${cmd} "${target}" # run command
 
   {
@@ -81,14 +82,6 @@ main(){
 
     [[ -n ${i3list[SIBFOC]} ]] \
       && i3-msg -q "[con_mark=i34${i3list[SIBFOC]}]" focus child
-  }
-
-  ((__o[verbose])) && {
-    _=${_n[1]}
-    local delta=$(( ($(date +%s%N)-_stamp) /1000 ))
-    local time=$(((delta / 1000) % 1000))
-    ERM  $'\n'"${time}ms"
-    ERM "----------------------------"
   }
 
 }
@@ -242,6 +235,19 @@ bitwiseinit() {
     [[ ${i3list[LVI]} =~ $k ]] \
       && _visible=$((_visible  | _m[k]))
   done
+}
+
+cleanup() {
+  ((_dummy)) \
+    && i3-msg -q "[con_id=$_dummy]" kill
+
+  ((__o[verbose])) && {
+    _=${_n[1]}
+    local delta=$(( ($(date +%s%N)-_stamp) /1000 ))
+    local time=$(((delta / 1000) % 1000))
+    ERM  $'\n'"${time}ms"
+    ERM "----------------------------"
+  }
 }
 
 containercreate(){
@@ -468,6 +474,16 @@ containershow(){
         && containershow "$sib"
     ;;
   esac
+}
+
+dummywindow() {
+
+  local tmp
+
+  tmp="$(i3-msg open)"
+  _dummy="${tmp//[^0-9]/}"
+
+  i3-msg -q "[con_id=$_dummy]" floating disable
 }
 
 ERM(){ >&2 echo "$*"; }
