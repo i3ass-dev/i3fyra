@@ -3,9 +3,11 @@ target:   ___getopt
 markdown: false
 wrap:     50
 ...
+
 declare -A __o
-eval set -- "$(getopt --name "%%name%%" \
-%%printf '  --options "'%%
+options="$(
+  getopt --name "[ERROR]:%%name%%" \
+%%printf '    --options "'%%
 %%for o in options%%
 %%if o[short]%%
 %%printf "%s" "o[short]"%%
@@ -15,7 +17,7 @@ eval set -- "$(getopt --name "%%name%%" \
 %%fi%%
 %%done%%
 %%printf '" \' 'null'%%
-%%printf '\n  --longoptions "'%%
+%%printf '\n    --longoptions "'%%
 %%for o in options%%
 %%if o[arg]%%
 %%printf "%s:," "o"%%
@@ -24,8 +26,11 @@ eval set -- "$(getopt --name "%%name%%" \
 %%fi%%
 %%done%%
 %%printf '" \\n'%%
-  -- "$@"
+    -- "$@" || exit 98
 )"
+
+eval set -- "$options"
+unset options
 
 while true; do
   case "$1" in
@@ -34,11 +39,15 @@ while true; do
 %%if opt[short]%%
 %%printf '| -%s ' 'opt[short]'%%
 %%fi%%
+%%if opt[long] ~ version|help%%
+%%printf ') ___print%s && exit ;;\n' 'opt[long]'%%
+%%else%%
 %%printf ') __o[%s]=' 'opt'%%
 %%if opt[arg]%%
 %%printf '"${2:-}" ; shift ;;\n'%%
 %%else%%
 %%printf '1 ;; \n'%%
+%%fi%%
 %%fi%%
 %%done%%
     -- ) shift ; break ;;
@@ -47,14 +56,5 @@ while true; do
   shift
 done
 
-if [[ ${__o[help]:-} = 1 ]]; then
-  ___printhelp
-  exit
-elif [[ ${__o[version]:-} = 1 ]]; then
-  ___printversion
-  exit
-fi
-
 [[ ${__lastarg:="${!#:-}"} =~ ^--$|${0}$ ]] \
-  && __lastarg="" \
-  || true
+  && __lastarg="" 

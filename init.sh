@@ -3,8 +3,8 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.552
-updated: 2020-01-26 by budRich
+i3fyra - version: 0.554
+updated: 2020-07-21 by budRich
 EOB
 }
 
@@ -114,11 +114,15 @@ for ___f in "${___dir}/lib"/*; do
 done
 
 declare -A __o
-eval set -- "$(getopt --name "i3fyra" \
-  --options "s:at:z:l:m:p:hv" \
-  --longoptions "show:,float,target:,hide:,layout:,move:,speed:,help,version," \
-  -- "$@"
+options="$(
+  getopt --name "[ERROR]:i3fyra" \
+    --options "s:at:z:l:m:p:hv" \
+    --longoptions "show:,float,target:,hide:,layout:,move:,speed:,help,version," \
+    -- "$@" || exit 98
 )"
+
+eval set -- "$options"
+unset options
 
 while true; do
   case "$1" in
@@ -129,26 +133,16 @@ while true; do
     --layout     | -l ) __o[layout]="${2:-}" ; shift ;;
     --move       | -m ) __o[move]="${2:-}" ; shift ;;
     --speed      | -p ) __o[speed]="${2:-}" ; shift ;;
-    --help       | -h ) __o[help]=1 ;; 
-    --version    | -v ) __o[version]=1 ;; 
+    --help       | -h ) ___printhelp && exit ;;
+    --version    | -v ) ___printversion && exit ;;
     -- ) shift ; break ;;
     *  ) break ;;
   esac
   shift
 done
 
-if [[ ${__o[help]:-} = 1 ]]; then
-  ___printhelp
-  exit
-elif [[ ${__o[version]:-} = 1 ]]; then
-  ___printversion
-  exit
-fi
-
 [[ ${__lastarg:="${!#:-}"} =~ ^--$|${0}$ ]] \
-  && __lastarg="" \
-  || true
-
+  && __lastarg="" 
 
 
 
