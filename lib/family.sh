@@ -6,7 +6,7 @@ familyshow(){
   local tfammem="${i3list[F${fam}]}"
   # F${fam} - family memory
 
-  famact=1
+  _famact=1
   for (( i = 0; i < ${#tfammem}; i++ )); do
     [[ ${tfammem:$i:1} =~ [${i3list[LHI]}] ]] \
       && containershow "${tfammem:$i:1}"

@@ -87,11 +87,11 @@ containershow(){
 
           [[ ${#swap[@]} -gt 0 ]] && {
             i3-msg -q "[con_mark=i34${swap[0]}]" \
-              swap container with mark i34${swap[1]}
+              swap container with mark "i34${swap[1]}"
           }
 
           [[ -n $tspl ]] \
-            && { ((tdim==i3list[WFW])) || ((famact!=1)) ;} && {
+            && { ((tdim==i3list[WFW])) || ((_famact!=1)) ;} && {
               i3list[S${tmrk}]=$((tdim/2))
               eval "applysplits $tmrk=$tspl"
           }
@@ -114,11 +114,11 @@ containershow(){
 
           [[ ${#swap[@]} -gt 0 ]] && {
             i3-msg -q "[con_mark=i34${swap[0]}]" \
-              swap container with mark i34${swap[1]}
+              swap container with mark "i34${swap[1]}"
           }
 
           [[ -n $tspl ]] \
-            && { ((tdim==i3list[WFH])) || ((famact!=1)) ;} && {
+            && { ((tdim==i3list[WFH])) || ((_famact!=1)) ;} && {
               i3list[S${tmrk}]=$((tdim/2))
               eval "applysplits $tmrk=$tspl"
           }

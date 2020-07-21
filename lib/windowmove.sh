@@ -66,30 +66,32 @@ windowmove(){
         fi
       else
         # if sibling is visible, hide it
-        [[ ${i3list[AFS]} =~ [${i3list[LVI]}] ]] \
-          && containerhide "${i3list[AFS]}" || {
+        if [[ ${i3list[AFS]} =~ [${i3list[LVI]}] ]]; then
+          containerhide "${i3list[AFS]}"
+        else
             # else show container, add to swap
             containershow "${i3list[AFS]}"
             {
               { [[ $dir = u ]] && [[ ${i3list[AFS]} =~ [AB] ]] ; } || \
               { [[ $dir = d ]] && [[ ${i3list[AFS]} =~ [CD] ]] ; }
             } && toswap=("i34${i3list[AFS]}" "i34${i3list[AWP]}")
-          }
+        fi
       fi
 
     # family toggling
     elif [[ $dir =~ l|r ]]; then
       if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
         # if sibling is visible, hide it
-        [[ ${i3list[AFS]} =~ [${i3list[LVI]}] ]] \
-          && containerhide "${i3list[AFS]}" || {
+        if [[ ${i3list[AFS]} =~ [${i3list[LVI]}] ]]; then
+          containerhide "${i3list[AFS]}"
+        else
             # else show container, add to swap
             containershow "${i3list[AFS]}"
             {
               { [[ $dir = l ]] && [[ ${i3list[AFS]} =~ [AC] ]] ; } || \
               { [[ $dir = r ]] && [[ ${i3list[AFS]} =~ [BD] ]] ; }
             } && toswap=("i34${i3list[AFS]}" "i34${i3list[AWP]}")
-          }
+        fi
       else
         # if relatives is visible, hide 'em
         if [[ ${i3list[LVI]} =~ [${i3list[AFO]}] ]]; then

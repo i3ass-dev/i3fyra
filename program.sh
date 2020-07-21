@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.554
+i3fyra - version: 0.562
 updated: 2020-07-21 by budRich
 EOB
 }
@@ -16,33 +16,59 @@ EOB
 
 
 main(){
+  
   local cmd target
 
-  if [[ -n ${__o[show]:-} ]]; then
+  declare -A _m # bitwise masks _m[A]=1
+  declare -a _n # bitwise names _n[1]=A
+
+  declare -i _existing
+  declare -i _visible
+  declare -i _isvertical=0
+
+  declare -i _famact # ?
+
+  ERM fyra start $'\n'
+
+  [[ ${I3FYRA_ORIENTATION,,} = vertical ]] \
+    && _isvertical=1
+
+  if [[ -n ${__o[show]} ]]; then
     cmd=containershow
     target="${__o[show]}"
-  elif [[ -n ${__o[hide]:-} ]]; then
+  elif [[ -n ${__o[hide]} ]]; then
     cmd=containerhide
     target="${__o[hide]}"
-  elif [[ -n ${__o[layout]:-} ]]; then
+  elif [[ -n ${__o[layout]} ]]; then
     cmd=applysplits
     target="${__o[layout]}"
-  elif ((${__o[float]:-0}==1)); then
+  elif ((__o[float])); then
     cmd=togglefloat
-  elif [[ -n ${__o[move]:-} ]]; then
+  elif [[ -n ${__o[move]} ]]; then
     cmd=windowmove
     target="${__o[move]}"
   fi
 
   declare -A i3list # globals array
-  eval "$(i3list ${__o[target]:-})"
+
+  # lopt = i3list options
+  mapfile -td $'\n\s' lopt <<< "${__o[target]:-}"
+  eval "${__o[array]:-$(i3list "${lopt[@]}")}"
+  unset 'lopt[@]'
+
+  bitwiseinit
+
+  ((__o[test])) && {
+    echo $_isvertical
+    ERM "v: $_visible"
+    ERM "e: $_existing"
+    exit
+  }
 
   [[ -z ${i3list[WSF]} ]] \
     && i3list[WSF]=${I3FYRA_WS:-${i3list[WSA]}}
 
-  i3list[CMA]=${I3FYRA_MAIN_CONTAINER:-A}
-
-  ${cmd} "${target:-}" # run command
+  ${cmd} "${target}" # run command
 
   {
     [[ $cmd = windowmove ]] && [[ -z ${i3list[SIBFOC]} ]] \
@@ -51,9 +77,11 @@ main(){
     [[ $cmd = togglefloat ]] \
         && i3-msg -q "[con_id=${i3list[AWC]}]" focus
 
-    [[ -n ${i3list[SIBFOC]:-} ]] \
+    [[ -n ${i3list[SIBFOC]} ]] \
       && i3-msg -q "[con_mark=i34${i3list[SIBFOC]}]" focus child
-  }  > /dev/null 2>&1
+  }
+
+  ERM  $'\n'"fyra done ${_n[1]}"$'\n'
   
 }
 
@@ -195,9 +223,9 @@ bitwiseinit() {
 
   for k in A B C D ; do
     [[ ${i3list[LEX]} =~ $k ]] \
-      && _existing=$((_existing | _m[$k]))
+      && _existing=$((_existing | _m[k]))
     [[ ${i3list[LVI]} =~ $k ]] \
-      && _visible=$((_visible  | _m[$k]))
+      && _visible=$((_visible  | _m[k]))
   done
 }
 
@@ -288,11 +316,11 @@ containershow(){
 
           [[ ${#swap[@]} -gt 0 ]] && {
             i3-msg -q "[con_mark=i34${swap[0]}]" \
-              swap container with mark i34${swap[1]}
+              swap container with mark "i34${swap[1]}"
           }
 
           [[ -n $tspl ]] \
-            && { ((tdim==i3list[WFW])) || ((famact!=1)) ;} && {
+            && { ((tdim==i3list[WFW])) || ((_famact!=1)) ;} && {
               i3list[S${tmrk}]=$((tdim/2))
               eval "applysplits $tmrk=$tspl"
           }
@@ -315,11 +343,11 @@ containershow(){
 
           [[ ${#swap[@]} -gt 0 ]] && {
             i3-msg -q "[con_mark=i34${swap[0]}]" \
-              swap container with mark i34${swap[1]}
+              swap container with mark "i34${swap[1]}"
           }
 
           [[ -n $tspl ]] \
-            && { ((tdim==i3list[WFH])) || ((famact!=1)) ;} && {
+            && { ((tdim==i3list[WFH])) || ((_famact!=1)) ;} && {
               i3list[S${tmrk}]=$((tdim/2))
               eval "applysplits $tmrk=$tspl"
           }
@@ -461,7 +489,7 @@ familyshow(){
   local tfammem="${i3list[F${fam}]}"
   # F${fam} - family memory
 
-  famact=1
+  _famact=1
   for (( i = 0; i < ${#tfammem}; i++ )); do
     [[ ${tfammem:$i:1} =~ [${i3list[LHI]}] ]] \
       && containershow "${tfammem:$i:1}"
@@ -693,30 +721,32 @@ windowmove(){
         fi
       else
         # if sibling is visible, hide it
-        [[ ${i3list[AFS]} =~ [${i3list[LVI]}] ]] \
-          && containerhide "${i3list[AFS]}" || {
+        if [[ ${i3list[AFS]} =~ [${i3list[LVI]}] ]]; then
+          containerhide "${i3list[AFS]}"
+        else
             # else show container, add to swap
             containershow "${i3list[AFS]}"
             {
               { [[ $dir = u ]] && [[ ${i3list[AFS]} =~ [AB] ]] ; } || \
               { [[ $dir = d ]] && [[ ${i3list[AFS]} =~ [CD] ]] ; }
             } && toswap=("i34${i3list[AFS]}" "i34${i3list[AWP]}")
-          }
+        fi
       fi
 
     # family toggling
     elif [[ $dir =~ l|r ]]; then
       if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
         # if sibling is visible, hide it
-        [[ ${i3list[AFS]} =~ [${i3list[LVI]}] ]] \
-          && containerhide "${i3list[AFS]}" || {
+        if [[ ${i3list[AFS]} =~ [${i3list[LVI]}] ]]; then
+          containerhide "${i3list[AFS]}"
+        else
             # else show container, add to swap
             containershow "${i3list[AFS]}"
             {
               { [[ $dir = l ]] && [[ ${i3list[AFS]} =~ [AC] ]] ; } || \
               { [[ $dir = r ]] && [[ ${i3list[AFS]} =~ [BD] ]] ; }
             } && toswap=("i34${i3list[AFS]}" "i34${i3list[AWP]}")
-          }
+        fi
       else
         # if relatives is visible, hide 'em
         if [[ ${i3list[LVI]} =~ [${i3list[AFO]}] ]]; then

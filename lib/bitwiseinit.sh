@@ -17,8 +17,8 @@ bitwiseinit() {
 
   for k in A B C D ; do
     [[ ${i3list[LEX]} =~ $k ]] \
-      && _existing=$((_existing | _m[$k]))
+      && _existing=$((_existing | _m[k]))
     [[ ${i3list[LVI]} =~ $k ]] \
-      && _visible=$((_visible  | _m[$k]))
+      && _visible=$((_visible  | _m[k]))
   done
 }
