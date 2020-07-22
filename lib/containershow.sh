@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/bin/bash
 
 containershow(){
   # show target ($1/trg) container (A|B|C|D)
