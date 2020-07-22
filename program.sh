@@ -3,8 +3,8 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.598
-updated: 2020-07-21 by budRich
+i3fyra - version: 0.6
+updated: 2020-07-22 by budRich
 EOB
 }
 
@@ -23,10 +23,11 @@ main(){
 
   local cmd target
 
-  declare -gA _m   # bitwise masks _m[A]=1
-  declare -ga _n   # bitwise names _n[1]=A
-  declare -ga _v   # "i3var"s to set
-  declare -ga _msg # i3-msg's
+  declare -gA _m     # bitwise masks _m[A]=1
+  declare -gA i3list # globals array
+  declare -ga _n     # bitwise names _n[1]=A
+  declare -ga _v     # "i3var"s to set
+  declare -ga _msg   # i3-msg's
 
   declare -gi _existing
   declare -gi _visible
@@ -44,46 +45,34 @@ main(){
   [[ ${I3FYRA_ORIENTATION,,} = vertical ]] \
     && _isvertical=1
 
-  if [[ -n ${__o[show]} ]]; then
-    cmd=containershow
-    target="${__o[show]}"
-  elif [[ -n ${__o[hide]} ]]; then
-    cmd=containerhide
-    target="${__o[hide]}"
-  elif [[ -n ${__o[layout]} ]]; then
-    cmd=applysplits
-    target="${__o[layout]}"
-  elif ((__o[float])); then
-    cmd=togglefloat
-  elif [[ -n ${__o[move]} ]]; then
-    cmd=windowmove
-    target="${__o[move]}"
-  fi
-
-  declare -A i3list # globals array
-
   # lopt = i3list options
+  # evaluate the output of i3list or argument
+  # to --array.
   mapfile -td $'\n\s' lopt <<< "${__o[target]:-}"
   eval "${__o[array]:-$(i3list "${lopt[@]}")}"
   unset 'lopt[@]'
 
   bitwiseinit
 
-  [[ -z ${i3list[WSF]} ]] \
-    && i3list[WSF]=${I3FYRA_WS:-${i3list[WSA]}}
+  ((i3list[WSF])) && i3list[WSF]=${I3FYRA_WS:-${i3list[WSA]}}
 
-  ${cmd} "${target}" # run command
+  if [[ -n ${__o[show]} ]]; then
+    containershow "${__o[show]}"
+  elif [[ -n ${__o[hide]} ]]; then
+    containerhide "${__o[hide]}"
+  elif [[ -n ${__o[layout]} ]]; then
+    applysplits "${__o[layout]}"
+  elif ((__o[float])); then
+    togglefloat
+    messy "[con_id=${i3list[AWC]}]" focus
+  elif [[ -n ${__o[move]} ]]; then
+    windowmove "${__o[move]}"
+    [[ -z ${i3list[SIBFOC]} ]] \
+      && messy "[con_id=${i3list[AWC]}]" focus
+  fi
 
-  {
-    [[ $cmd = windowmove ]] && [[ -z ${i3list[SIBFOC]} ]] \
-        && i3-msg -q "[con_id=${i3list[AWC]}]" focus
-
-    [[ $cmd = togglefloat ]] \
-        && i3-msg -q "[con_id=${i3list[AWC]}]" focus
-
-    [[ -n ${i3list[SIBFOC]} ]] \
-      && i3-msg -q "[con_mark=i34${i3list[SIBFOC]}]" focus child
-  }
+  [[ -n ${i3list[SIBFOC]} ]] \
+    && messy "[con_mark=i34${i3list[SIBFOC]}]" focus child
 
 }
 
@@ -95,11 +84,11 @@ i3fyra - An advanced, simple grid-based tiling layout
 
 SYNOPSIS
 --------
-i3fyra --show|-s CONTAINER [--array ARRAY] [--verbose]
-i3fyra --float|-a [--target|-t CRITERION] [--array ARRAY] [--verbose]
-i3fyra --hide|-z CONTAINER [--array ARRAY] [--verbose]
-i3fyra --layout|-l LAYOUT [--array ARRAY] [--verbose]
-i3fyra --move|-m DIRECTION|CONTAINER [--speed|-p INT]  [--target|-t CRITERION] [--array ARRAY] [--verbose]
+i3fyra --show|-s CONTAINER [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --float|-a [--target|-t CRITERION] [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --hide|-z CONTAINER [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --layout|-l LAYOUT [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --move|-m DIRECTION|CONTAINER [--speed|-p INT]  [--target|-t CRITERION] [--array ARRAY] [--verbose] [--dryrun]
 i3fyra --help|-h
 i3fyra --version|-v
 
@@ -115,6 +104,8 @@ it. If it is visible, nothing happens.
 --array ARRAY  
 
 --verbose  
+
+--dryrun  
 
 --float|-a  
 Autolayout. If current window is tiled: floating
@@ -241,19 +232,17 @@ bitwiseinit() {
 
 cleanup() {
 
+  local qflag
+
+  ((__o[verbose])) || qflag='-q'
+
   ((_dummy)) \
     && messy "[con_id=$_dummy]" kill
 
   ((${#_v[@]})) && varset "${_v[@]}"
 
-  ((${#_msg[@]})) && {
-    if ((__o[verbose])); then
-      ERM "MSG ${_msg[*]}"
-      i3-msg "${_msg[@]}"
-    else
-      i3-msg -q "${_msg[@]}"
-    fi
-  }
+  ((${#_msg[@]})) && ((!__o[dryrun])) \
+    && i3-msg "${qflag:-}" "${_msg[@]}"
 
   ((__o[verbose])) && {
     _=${_n[1]}
@@ -261,7 +250,6 @@ cleanup() {
     local delta=$(( ($(date +%s%N)-_stamp) /1000 ))
     local time=$(((delta / 1000) % 1000))
     ERM  $'\n'"${time}ms"
-    ERM "dummy id: $_dummy"
     ERM "----------------------------"
   }
 }
@@ -275,15 +263,14 @@ containercreate(){
   # error can't create container without window
   [[ -z ${i3list[TWC]} ]] && exit 1
 
-  ((_dummy)) || dummywindow
-  # i3gw gurra  > /dev/null 2>&1
-  messy "[con_id=$_dummy]" \
-    split h, layout tabbed
+  dummywindow dummy
+
+  messy "[con_mark=dummy]" split h, layout tabbed
   messy "[con_id=${i3list[TWC]}]" \
-    floating disable, move to mark "$_dummy"
-  messy "[con_id=$_dummy]" \
-    focus, focus parent
+    floating disable, move to mark dummy
+  messy "[con_mark=dummy]" focus, focus parent
   messy mark "i34${trg}"
+  messy "[con_mark=dummy]" kill
     
   # after creation, move cont to scratch
   messy "[con_mark=i34${trg}]" focus, floating enable, \
@@ -501,14 +488,18 @@ dummywindow() {
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}()"
 
-  declare -gi _dummy
-  local tmp
+  local mark id
+  
+  mark=${1:?first argument not a mark name}
 
-  tmp="$(i3-msg open)"
-  _dummy="${tmp//[^0-9]/}"
+  if ((__o[dryrun])); then
+    id=777
+  else
+    id="$(i3-msg open)"
+    id="${id//[^0-9]/}"
+  fi
 
-  messy "[con_id=$_dummy]" \
-    floating disable, mark "$_dummy"
+  messy "[con_id=$id]" floating disable, mark "$mark"
 }
 
 ERM(){ >&2 echo "$*"; }
@@ -541,25 +532,26 @@ familycreate(){
   fi
 
   messy "[con_mark=i34X${tfam}]" unmark
-  # i3gw gurra  > /dev/null 2>&1
-  ((_dummy)) || dummywindow
-  messy "[con_id=$_dummy]" \
+
+  dummywindow dummy
+  
+  messy "[con_mark=dummy]" \
     move to mark "i34X${ofam}", split v, layout tabbed
 
   messy "[con_mark=i34${trg}]" \
     move to workspace "${i3list[WSA]}", \
     floating disable, \
-    move to mark "$_dummy"
-  messy "[con_id=$_dummy]" focus, focus parent
+    move to mark dummy
+  messy "[con_mark=dummy]" focus, focus parent
   messy mark i34X${tfam}
 
   if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    messy "[con_id=$_dummy]" layout splith, split h
-    # messy "[con_id=$_dummy]" kill
+    messy "[con_mark=dummy]" layout splith, split h
+    messy "[con_mark=dummy]" kill
     messy "[con_mark=i34X${tfam}]" move down
   else
-    messy "[con_id=$_dummy]" layout splitv, split v
-    # messy "[con_id=$_dummy]" kill
+    messy "[con_mark=dummy]" layout splitv, split v
+    messy "[con_mark=dummy]" kill
     messy "[con_mark=i34X${tfam}]" move right
   fi
 
@@ -639,27 +631,26 @@ layoutcreate(){
     messy "[con_mark=i34XAB]" unmark
   fi
 
-  # i3gw gurra  > /dev/null 2>&1
-  ((_dummy)) || dummywindow
+  dummywindow dummy
   
-  messy "[con_id=$_dummy]" \
+  messy "[con_mark=dummy]" \
     split v, layout tabbed
   
   messy "[con_mark=i34${trg}]" \
     move to workspace "${i3list[WSA]}", \
     floating disable, \
-    move to mark "$_dummy"
+    move to mark dummy
 
-  messy "[con_id=$_dummy]" focus parent
+  messy "[con_mark=dummy]" focus parent
   messy mark i34X${fam}, focus parent
 
   if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    messy "[con_id=$_dummy]" layout splith, split h
-    # messy "[con_id=$_dummy]" kill
+    messy "[con_mark=dummy]" layout splith, split h
+    messy "[con_mark=dummy]" kill
     messy "[con_mark=i34XAC]" layout splitv, split v
   else
-    messy "[con_id=$_dummy]" layout default, split v
-    # messy "[con_id=$_dummy]" kill
+    messy "[con_mark=dummy]" layout default, split v
+    messy "[con_mark=dummy]" kill
     messy "[con_mark=i34XAB]" layout splith, split h
   fi
 
@@ -859,7 +850,7 @@ varset() {
     [[ $json =~ $re ]] && mark="${BASH_REMATCH[1]}"
 
     if [[ -z $mark ]]; then
-      i3gw "${key}=${val}"
+      dummywindow "${key}=${val}"
       messy "[con_mark=${key}]" move scratchpad
     else
       messy "[con_mark=${key}]" mark "${key}=${val}"
@@ -1013,7 +1004,7 @@ declare -A __o
 options="$(
   getopt --name "[ERROR]:i3fyra" \
     --options "s:at:z:l:m:p:hv" \
-    --longoptions "show:,array:,verbose,float,target:,hide:,layout:,move:,speed:,help,version," \
+    --longoptions "show:,array:,verbose,dryrun,float,target:,hide:,layout:,move:,speed:,help,version," \
     -- "$@" || exit 98
 )"
 
@@ -1025,6 +1016,7 @@ while true; do
     --show       | -s ) __o[show]="${2:-}" ; shift ;;
     --array      ) __o[array]="${2:-}" ; shift ;;
     --verbose    ) __o[verbose]=1 ;; 
+    --dryrun     ) __o[dryrun]=1 ;; 
     --float      | -a ) __o[float]=1 ;; 
     --target     | -t ) __o[target]="${2:-}" ; shift ;;
     --hide       | -z ) __o[hide]="${2:-}" ; shift ;;

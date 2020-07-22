@@ -8,10 +8,11 @@ main(){
 
   local cmd target
 
-  declare -gA _m   # bitwise masks _m[A]=1
-  declare -ga _n   # bitwise names _n[1]=A
-  declare -ga _v   # "i3var"s to set
-  declare -ga _msg # i3-msg's
+  declare -gA _m     # bitwise masks _m[A]=1
+  declare -gA i3list # globals array
+  declare -ga _n     # bitwise names _n[1]=A
+  declare -ga _v     # "i3var"s to set
+  declare -ga _msg   # i3-msg's
 
   declare -gi _existing
   declare -gi _visible
@@ -29,46 +30,34 @@ main(){
   [[ ${I3FYRA_ORIENTATION,,} = vertical ]] \
     && _isvertical=1
 
-  if [[ -n ${__o[show]} ]]; then
-    cmd=containershow
-    target="${__o[show]}"
-  elif [[ -n ${__o[hide]} ]]; then
-    cmd=containerhide
-    target="${__o[hide]}"
-  elif [[ -n ${__o[layout]} ]]; then
-    cmd=applysplits
-    target="${__o[layout]}"
-  elif ((__o[float])); then
-    cmd=togglefloat
-  elif [[ -n ${__o[move]} ]]; then
-    cmd=windowmove
-    target="${__o[move]}"
-  fi
-
-  declare -A i3list # globals array
-
   # lopt = i3list options
+  # evaluate the output of i3list or argument
+  # to --array.
   mapfile -td $'\n\s' lopt <<< "${__o[target]:-}"
   eval "${__o[array]:-$(i3list "${lopt[@]}")}"
   unset 'lopt[@]'
 
   bitwiseinit
 
-  [[ -z ${i3list[WSF]} ]] \
-    && i3list[WSF]=${I3FYRA_WS:-${i3list[WSA]}}
+  ((i3list[WSF])) && i3list[WSF]=${I3FYRA_WS:-${i3list[WSA]}}
 
-  ${cmd} "${target}" # run command
+  if [[ -n ${__o[show]} ]]; then
+    containershow "${__o[show]}"
+  elif [[ -n ${__o[hide]} ]]; then
+    containerhide "${__o[hide]}"
+  elif [[ -n ${__o[layout]} ]]; then
+    applysplits "${__o[layout]}"
+  elif ((__o[float])); then
+    togglefloat
+    messy "[con_id=${i3list[AWC]}]" focus
+  elif [[ -n ${__o[move]} ]]; then
+    windowmove "${__o[move]}"
+    [[ -z ${i3list[SIBFOC]} ]] \
+      && messy "[con_id=${i3list[AWC]}]" focus
+  fi
 
-  {
-    [[ $cmd = windowmove ]] && [[ -z ${i3list[SIBFOC]} ]] \
-        && i3-msg -q "[con_id=${i3list[AWC]}]" focus
-
-    [[ $cmd = togglefloat ]] \
-        && i3-msg -q "[con_id=${i3list[AWC]}]" focus
-
-    [[ -n ${i3list[SIBFOC]} ]] \
-      && i3-msg -q "[con_mark=i34${i3list[SIBFOC]}]" focus child
-  }
+  [[ -n ${i3list[SIBFOC]} ]] \
+    && messy "[con_mark=i34${i3list[SIBFOC]}]" focus child
 
 }
 

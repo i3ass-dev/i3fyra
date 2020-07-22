@@ -9,15 +9,14 @@ containercreate(){
   # error can't create container without window
   [[ -z ${i3list[TWC]} ]] && exit 1
 
-  ((_dummy)) || dummywindow
-  # i3gw gurra  > /dev/null 2>&1
-  messy "[con_id=$_dummy]" \
-    split h, layout tabbed
+  dummywindow dummy
+
+  messy "[con_mark=dummy]" split h, layout tabbed
   messy "[con_id=${i3list[TWC]}]" \
-    floating disable, move to mark "$_dummy"
-  messy "[con_id=$_dummy]" \
-    focus, focus parent
+    floating disable, move to mark dummy
+  messy "[con_mark=dummy]" focus, focus parent
   messy mark "i34${trg}"
+  messy "[con_mark=dummy]" kill
     
   # after creation, move cont to scratch
   messy "[con_mark=i34${trg}]" focus, floating enable, \

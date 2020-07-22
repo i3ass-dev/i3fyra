@@ -4,12 +4,16 @@ dummywindow() {
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}()"
 
-  declare -gi _dummy
-  local tmp
+  local mark id
+  
+  mark=${1:?first argument not a mark name}
 
-  tmp="$(i3-msg open)"
-  _dummy="${tmp//[^0-9]/}"
+  if ((__o[dryrun])); then
+    id=777
+  else
+    id="$(i3-msg open)"
+    id="${id//[^0-9]/}"
+  fi
 
-  messy "[con_id=$_dummy]" \
-    floating disable, mark "$_dummy"
+  messy "[con_id=$id]" floating disable, mark "$mark"
 }

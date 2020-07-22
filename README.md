@@ -3,11 +3,11 @@
 ### usage
 
 ```text
-i3fyra --show|-s CONTAINER [--array ARRAY] [--verbose]
-i3fyra --float|-a [--target|-t CRITERION] [--array ARRAY] [--verbose]
-i3fyra --hide|-z CONTAINER [--array ARRAY] [--verbose]
-i3fyra --layout|-l LAYOUT [--array ARRAY] [--verbose]
-i3fyra --move|-m DIRECTION|CONTAINER [--speed|-p INT]  [--target|-t CRITERION] [--array ARRAY] [--verbose]
+i3fyra --show|-s CONTAINER [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --float|-a [--target|-t CRITERION] [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --hide|-z CONTAINER [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --layout|-l LAYOUT [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --move|-m DIRECTION|CONTAINER [--speed|-p INT]  [--target|-t CRITERION] [--array ARRAY] [--verbose] [--dryrun]
 i3fyra --help|-h
 i3fyra --version|-v
 ```
@@ -65,6 +65,8 @@ visible, nothing happens.
 `--array` ARRAY  
 
 `--verbose`  
+
+`--dryrun`  
 
 `--float`|`-a`  
 Autolayout. If current window is tiled: floating enabled If
