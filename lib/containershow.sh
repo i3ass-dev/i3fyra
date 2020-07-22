@@ -20,6 +20,8 @@ containershow(){
 
   ((target & _m[ABCD])) \
     || ERX "$trg is not a valid container name (ABCD)"
+  
+  ERM "$trg : $(tobin $_visible)"
 
   if ((target & _visible)); then
     return 0
