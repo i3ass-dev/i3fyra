@@ -6,7 +6,7 @@ containershow(){
   # if it doesn't exist, create it 
   local trg=$1 tfam sib tdest tmrk
 
-  declare -i target family sibling dest tspl tdim famshow
+  declare -i target
   declare -a swap=()
 
   target=${_m[$trg]}
@@ -21,6 +21,8 @@ containershow(){
     layoutcreate "$trg"
   
   elif ((target & _hidden)); then
+
+    declare -i family sibling dest tspl tdim famshow
     
     ((_isvertical)) \
       && family=$((target & _m[AB]?_m[AB]:_m[CD])) \
@@ -35,22 +37,7 @@ containershow(){
 
     tfam=${_n[$family]}
     sib=${_n[$sibling]}
-    tdest=i34X${_n[$dest]}    
-
-    # if tdest is main container, trg is first in family
-    if ((_isvertical && dest == _m[AC])); then
-      familycreate "$trg"
-      famshow=1
-    
-    elif ((!_isvertical && dest == _m[AB])); then
-      familycreate "$trg"
-      famshow=1
-    else
-      # WSA = active workspace
-      messy "[con_mark=i34${trg}]" \
-        move to workspace "${i3list[WSA]}", \
-        floating disable, move to mark "$tdest"
-    fi
+    tdest=i34X${_n[$dest]}
 
     if ((_isvertical)); then
       mainsplit=AC
@@ -66,21 +53,31 @@ containershow(){
       size2=${i3list[WFH]}
     fi
 
-    # swap - what to swap
-    ((dest == _m[$mainsplit] && sibling & _m[$mainfam])) \
-      && swap=("X$tfam" "X${i3list[LAL]/$tfam/}")
+    # if tdest is main container, trg is first in family
+    if ((dest == _m[$mainsplit])) ; then
 
-    ((dest == _m[$tfam] && sibling & _m[$sibgroup])) \
-      && swap=("$trg" "$sib")
+      familycreate "$trg"
+      famshow=1
 
-    if ((dest == _m[$mainsplit])); then
       tspl=${i3list[M$mainsplit]}  # stored split
       tdim=$size1                  # workspace width
       tmrk=$mainsplit
+
+      ((sibling & _m[$mainfam])) \
+        && swap=("X$tfam" "X${i3list[LAL]/$tfam/}")
+
     else
+      # WSA = active workspace
+      messy "[con_mark=i34${trg}]" \
+        move to workspace "${i3list[WSA]}", \
+        floating disable, move to mark "$tdest"
+
       tspl=${i3list[M${tfam}]}
       tdim=$size2     
-      tmrk=$tfam 
+      tmrk=$tfam
+
+      ((sibling & _m[$sibgroup])) && swap=("$trg" "$sib")
+
     fi
 
     ((${#swap[@]})) && {
@@ -94,8 +91,7 @@ containershow(){
         applysplits "$tmrk=$tspl"
     }
 
-    ((_visible |= target))
-    ((_hiddent &= ~target))
+    ((_visible |= target)) && ((_hiddent &= ~target))
 
     # bring the whole family
     ((famshow && sibling & _hidden)) && containershow "$sib"
