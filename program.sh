@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.73
+i3fyra - version: 0.742
 updated: 2020-07-22 by budRich
 EOB
 }
@@ -364,11 +364,9 @@ containershow(){
   # show target ($1/trg) container (A|B|C|D)
   # if it already is visible, do nothing.
   # if it doesn't exist, create it 
-  local trg=$1 tfam sib tdest tmrk
+  local trg=$1
 
   declare -i target
-  declare -a swap=()
-
   target=${_m[$trg]}
 
   ((target & _m[ABCD])) || ERX "$trg not valid container"
@@ -382,22 +380,13 @@ containershow(){
   
   elif ((target & _hidden)); then
 
-    declare -i family sibling dest tspl tdim famshow
-    
-    ((_isvertical)) \
-      && family=$((target & _m[AB]?_m[AB]:_m[CD])) \
-      || family=$((target & _m[AC]?_m[AC]:_m[BD]))
+    declare -i family sibling dest tspl tdim
+    declare -i famshow size1 size2
 
-    sibling=$((family & ~target))
+    local tfam sib tdest tmrk mainsplit 
+    local mainfam sibgroup
 
-    # if sibling is visible, dest (destination)
-    # is family otherwise main container
-    dest=$(( sibling & _visible ? family :
-             (_isvertical ? _m[AC] : _m[AB]) ))
-
-    tfam=${_n[$family]}
-    sib=${_n[$sibling]}
-    tdest=i34X${_n[$dest]}
+    declare -a swap=()
 
     if ((_isvertical)); then
       mainsplit=AC
@@ -405,13 +394,24 @@ containershow(){
       sibgroup=BD
       size1=${i3list[WFH]}
       size2=${i3list[WFW]}
+
     else
       mainsplit=AB
       mainfam=AC
       sibgroup=CD
       size1=${i3list[WFW]}
       size2=${i3list[WFH]}
+
     fi
+
+    family=$((target & _m[$mainfam] ? _m[$mainfam] 
+           :( _m[ABCD] & ~_m[$mainfam] ) ))
+
+    sibling=$((family & ~target))
+    dest=$((sibling & _visible ? family : _m[$mainsplit]))
+    tfam=${_n[$family]}
+    sib=${_n[$sibling]}
+    tdest=i34X${_n[$dest]}
 
     # if tdest is main container, trg is first in family
     if ((dest == _m[$mainsplit])) ; then
@@ -546,29 +546,25 @@ familyhide(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local tfam=$1
-  local trg famchk tfammem i
+  local trg famchk tfam=$1
 
-  for (( i = 0; i < 2; i++ )); do
+  declare -i target i
+
+  for ((i=0;i<${#tfam};i++)); do
+
     trg=${tfam:$i:1}
-    if [[ ${trg} =~ [${i3list[LVI]}] ]]; then
-      messy "[con_mark=i34${trg}]" focus, floating enable, \
-        move absolute position 0 px 0 px, \
-        resize set \
-        "$((i3list[WFW]/2))" px \
-        "$((i3list[WFH]/2))" px, \
-        move scratchpad
+    target=${_m[$trg]}
 
-      i3list[LHI]+=$trg
-      i3list[LVI]=${i3list[LVI]/$trg/}
+    if ((target & _visible)); then
+      messy "[con_mark=i34${trg}]" move scratchpad
+
+      ((_visible &= ~target))
+      ((_hidden  |= target))
 
       famchk+=${trg}
     fi
   done
 
-  # i3var set "i34F${tfam}" "${famchk}"
-  # i3var set "i34MAB" "${i3list[SAB]}"
-  # i3var set "i34M${tfam}" "${i3list[S${tfam}]}"
   _v+=("i34F${tfam}" "${famchk}")
   _v+=("i34MAB" "${i3list[SAB]}")
   _v+=("i34M${tfam}" "${i3list[S${tfam}]}")

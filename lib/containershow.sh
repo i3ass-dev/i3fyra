@@ -4,11 +4,9 @@ containershow(){
   # show target ($1/trg) container (A|B|C|D)
   # if it already is visible, do nothing.
   # if it doesn't exist, create it 
-  local trg=$1 tfam sib tdest tmrk
+  local trg=$1
 
   declare -i target
-  declare -a swap=()
-
   target=${_m[$trg]}
 
   ((target & _m[ABCD])) || ERX "$trg not valid container"
@@ -22,22 +20,13 @@ containershow(){
   
   elif ((target & _hidden)); then
 
-    declare -i family sibling dest tspl tdim famshow
-    
-    ((_isvertical)) \
-      && family=$((target & _m[AB]?_m[AB]:_m[CD])) \
-      || family=$((target & _m[AC]?_m[AC]:_m[BD]))
+    declare -i family sibling dest tspl tdim
+    declare -i famshow size1 size2
 
-    sibling=$((family & ~target))
+    local tfam sib tdest tmrk mainsplit 
+    local mainfam sibgroup
 
-    # if sibling is visible, dest (destination)
-    # is family otherwise main container
-    dest=$(( sibling & _visible ? family :
-             (_isvertical ? _m[AC] : _m[AB]) ))
-
-    tfam=${_n[$family]}
-    sib=${_n[$sibling]}
-    tdest=i34X${_n[$dest]}
+    declare -a swap=()
 
     if ((_isvertical)); then
       mainsplit=AC
@@ -45,13 +34,24 @@ containershow(){
       sibgroup=BD
       size1=${i3list[WFH]}
       size2=${i3list[WFW]}
+
     else
       mainsplit=AB
       mainfam=AC
       sibgroup=CD
       size1=${i3list[WFW]}
       size2=${i3list[WFH]}
+
     fi
+
+    family=$((target & _m[$mainfam] ? _m[$mainfam] 
+           :( _m[ABCD] & ~_m[$mainfam] ) ))
+
+    sibling=$((family & ~target))
+    dest=$((sibling & _visible ? family : _m[$mainsplit]))
+    tfam=${_n[$family]}
+    sib=${_n[$sibling]}
+    tdest=i34X${_n[$dest]}
 
     # if tdest is main container, trg is first in family
     if ((dest == _m[$mainsplit])) ; then
