@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.605
+i3fyra - version: 0.615
 updated: 2020-07-22 by budRich
 EOB
 }
@@ -21,12 +21,12 @@ main(){
 
   trap 'cleanup' EXIT
 
-  declare -gA _m        # bitwise masks _m[A]=1
-  declare -gA i3list    # globals array
-  declare -ga _n        # bitwise names _n[1]=A
-  declare -ga _v        # "i3var"s to set
-  declare -g _msgstring # combined i3-msg
-  declare -g _sizstring # combined resize i3-msg
+  declare -gA _m         # bitwise masks _m[A]=1
+  declare -gA i3list     # globals array
+  declare -ga _n         # bitwise names _n[1]=A
+  declare -ga _v         # "i3var"s to set
+  declare -g  _msgstring # combined i3-msg
+  declare -g  _sizstring # combined resize i3-msg
 
   declare -gi _existing
   declare -gi _visible
@@ -44,12 +44,14 @@ main(){
   [[ ${I3FYRA_ORIENTATION,,} = vertical ]] \
     && _isvertical=1
 
-  # lopt = i3list options
-  # evaluate the output of i3list or argument
-  # to --array.
-  mapfile -td $'\n\s' lopt <<< "${__o[target]:-}"
-  eval "${__o[array]:-$(i3list "${lopt[@]}")}"
-  unset 'lopt[@]'
+  # evaluate the output of i3list or --array
+  if [[ -n ${__o[array]} ]]; then
+    eval "${__o[array]}"
+  else
+    mapfile -td $'\n\s' lopt <<< "${__o[target]:-}"
+    eval "$(i3list "${lopt[@]}")"
+    unset 'lopt[@]'
+  fi
 
   ((i3list[WSF])) && i3list[WSF]=${I3FYRA_WS:-${i3list[WSA]}}
 
@@ -57,17 +59,22 @@ main(){
 
   if [[ -n ${__o[show]} ]]; then
     containershow "${__o[show]}"
+
   elif [[ -n ${__o[hide]} ]]; then
     containerhide "${__o[hide]}"
+
   elif [[ -n ${__o[layout]} ]]; then
     applysplits "${__o[layout]}"
+
   elif ((__o[float])); then
     togglefloat
     messy "[con_id=${i3list[AWC]}]" focus
+
   elif [[ -n ${__o[move]} ]]; then
     windowmove "${__o[move]}"
     [[ -z ${i3list[SIBFOC]} ]] \
       && messy "[con_id=${i3list[AWC]}]" focus
+      
   fi
 
   [[ -n ${i3list[SIBFOC]} ]] \
@@ -179,28 +186,35 @@ applysplits(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local i tsn tsv par dir mrk
+  local i tsn dir mrk
+  declare -i tsv par parw parh
+
+  # i3list[WF-W/H] - i3fyra workspace W/H
+  # i3list[WA-W/H] - active workspace W/H
+  parw=${i3list[WFW]:-"${i3list[WAW]}"}
+  parh=${i3list[WFH]:-"${i3list[WAH]}"}
 
   for i in ${1}; do
-    tsn="${i%\=*}" # target name of split
-    tsv="${i#*\=}" # target value of split
+    tsn=${i%=*} # target name of split
+    tsv=${i#*=} # target value of split
 
-    if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+    if ((_isvertical)); then
       [[ $tsn = AC ]] \
-        && par=${i3list[WFH]:-"${i3list[WAH]}"} dir=height mrk=i34XAB \
-        || par=${i3list[WFW]:-"${i3list[WAW]}"} dir=width mrk=i34${tsn:0:1}
+        && par=$parh dir=height mrk=i34XAB \
+        || par=$parw dir=width  mrk=i34${tsn:0:1}
     else
       [[ $tsn = AB ]] \
-        && par=${i3list[WFW]:-"${i3list[WAW]}"} dir=width mrk=i34XAC \
-        || par=${i3list[WFH]:-"${i3list[WAH]}"} dir=height mrk=i34${tsn:0:1}
+        && par=$parw dir=width  mrk=i34XAC \
+        || par=$parh dir=height mrk=i34${tsn:0:1}
     fi
 
     ((tsv<0)) && tsv=$((par-(tsv*-1)))
 
     messy "[con_mark=${mrk}]" resize set "$dir" "$tsv" px
 
+    # i3list[Sxx] = current/actual split xx
+    # i3list[Mxx] = last/stored    split xx
     i3list[S${tsn}]=${tsv}
-    # i3var set "i34M${tsn}" ${tsv}
     _v+=("i34M${tsn}" "${tsv}")
 
   done
