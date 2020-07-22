@@ -4,54 +4,59 @@ containerhide(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local trg tfam
-
-  trg=$1
+  local trg=$1
+  local tfam sib mainsplit
 
   [[ ${#trg} -gt 1 ]] && multihide "$trg" && return
 
-  [[ $trg =~ A|C ]] && tfam=AC || tfam=BD
+  declare -i family target sibling ref1 ref2 mainsize famsize
+
+  target=${_m[$trg]}
+
   if ((_isvertical)); then
-    [[ $trg =~ A|B ]] && tfam=AB || tfam=CD
+    mainsplit=AC
+    ref1=${i3list[WFH]}
+    ref2=${i3list[WFW]}
+    family=$((target & _m[AB]?_m[AB]:_m[CD]))
+  else
+    mainsplit=AB
+    ref1=${i3list[WFW]}
+    ref2=${i3list[WFH]}
+    family=$((target & _m[AC]?_m[AC]:_m[BD]))
   fi
 
-  messy "[con_mark=i34${trg}]" focus, floating enable, \
-    move absolute position 0 px 0 px, \
-    resize set $((i3list[WFW]/2)) px $((i3list[WFH]/2)) px, \
-    move scratchpad
+  tfam=${_n[$family]}
+  mainsize=${i3list[S$mainsplit]}
+  famsize=${i3list[S$tfam]}
+
+  sibling=$((family & ~target))
+  sib=${_n[$sibling]}
+
+  messy "[con_mark=i34${trg}]" move scratchpad
+
   # add to trg to hid
   i3list[LHI]+=$trg
   i3list[LVI]=${i3list[LVI]/$trg/}
   i3list[LVI]=${i3list[LVI]:-X}
 
+  ((_visible &= ~target))
+
   # if trg is last of it's fam, note it.
   # else focus sib
-  [[ ! ${tfam/$trg/} =~ [${i3list[LVI]}] ]] \
+  (( ! sibling & _visible ))      \
     && _v+=("i34F${tfam}" "$trg") \
-    || i3list[SIBFOC]=${tfam/$trg/}
+    || i3list[SIBFOC]=$sib
 
   # note splits
-  if ((_isvertical)); then
-    [[ -n ${i3list[SAC]} ]] && ((i3list[SAC]!=i3list[WFH])) && {
-      _v+=("i34MAC" "${i3list[SAC]}")
-      i3list[MAC]=${i3list[SAC]}
-    }
+  ((mainsize && mainsize!=ref1)) && {
+    _v+=("i34M${mainsplit}" "$mainsize")
+    i3list[M${mainsplit}]=$mainsize
+  }
 
-    [[ -n ${i3list[S${tfam}]} ]] && ((${i3list[S${tfam}]}!=i3list[WFW])) && {
-      _v+=("i34M${tfam}" "${i3list[S${tfam}]}")
-      i3list[M${tfam}]=${i3list[S${tfam}]}
-    }
-  else
-    [[ -n ${i3list[SAB]} ]] && ((i3list[SAB]!=i3list[WFW])) && {
-      _v+=("i34MAB" "${i3list[SAB]}")
-      i3list[MAB]=${i3list[SAB]}
-    }
-
-    [[ -n ${i3list[S${tfam}]} ]] && ((${i3list[S${tfam}]}!=i3list[WFH])) && {
-      _v+=("i34M${tfam}" "${i3list[S${tfam}]}")
-      i3list[M${tfam}]=${i3list[S${tfam}]}
-    }
-  fi
+  (( famsize && famsize!=ref2)) && {
+    _v+=("i34M${tfam}" "$famsize")
+    i3list[M${tfam}]=$famsize
+  }
 }
 
 
