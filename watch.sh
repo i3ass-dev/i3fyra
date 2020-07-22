@@ -13,7 +13,8 @@ while read -r ; do
   clear
   bashbud --bump "$_dir"
   shellcheck "$_dir/program.sh" && {
-    "${cmd1[@]}" --verbose
+    "${cmd1[@]}" --verbose 2>&1 >/dev/null | head -n -3 > "$_dir/tests/results"
+    diff "$_dir/tests/results" "$_dir/tests/ref1"
     time(
       while ((++i<50));do 
         "${cmd1[@]}"

@@ -1,0 +1,23 @@
+ 
+f windowmove(left)
+f familyshow(BD)
+f familycreate(B)
+m [con_mark=i34XBD] unmark
+f dummywindow()
+m [con_id=777] floating disable, mark dummy
+m [con_mark=dummy] move to mark i34XAC, split v, layout tabbed
+m [con_mark=i34B] move to workspace 1, floating disable, move to mark dummy
+m [con_mark=dummy] focus, focus parent
+m mark i34XBD
+m [con_mark=dummy] layout splitv, split v
+m [con_mark=dummy] kill
+m [con_mark=i34XBD] move right
+m [con_mark=i34D] move to workspace 1, floating disable, move to mark i34XBD
+f applysplits(BD=252)
+m [con_mark=i34B] resize set height 252 px
+f applysplits(AB=1520)
+m [con_mark=i34XAC] resize set width 1520 px
+m [con_id=94891844684640] focus
+f varset(i34MBD 252 i34MAB 1520)
+m [con_mark=i34MBD] mark i34MBD=252
+m [con_mark=i34MAB] mark i34MAB=1520

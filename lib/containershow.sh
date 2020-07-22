@@ -1,134 +1,105 @@
 #!/bin/env bash
 
 containershow(){
-
-  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
-  
   # show target ($1/trg) container (A|B|C|D)
   # if it already is visible, do nothing.
   # if it doesn't exist, create it 
-  local trg tfam sib tdest famshow tmrk tspl tdim
+  local trg=$1 tfam sib tdest tmrk
 
-  # trg = target container
-
-  trg=$1
-
-  declare -i target family sibling destination
+  declare -i target family sibling dest tspl tdim famshow
+  declare -a swap=()
 
   target=${_m[$trg]}
 
-  ((target & _m[ABCD])) \
-    || ERX "$trg is not a valid container name (ABCD)"
+  ((target & _m[ABCD])) || ERX "$trg not valid container"
 
-  if [[ ${i3list[LVI]} =~ $trg ]]; then
+  if ((target & _visible)); then
     return 0
-  elif [[ ${i3list[LHI]} =~ $trg ]]; then
-    # sib = sibling, tfam = family
+
+  # if if no containers are visible create layout
+  elif ((!_visible)); then
+    layoutcreate "$trg"
+  
+  elif ((target & _hidden)); then
+    
     ((_isvertical)) \
       && family=$((target & _m[AB]?_m[AB]:_m[CD])) \
       || family=$((target & _m[AC]?_m[AC]:_m[BD]))
 
+    sibling=$((family & ~target))
+
+    # if sibling is visible, dest (destination)
+    # is family otherwise main container
+    dest=$(( sibling & _visible ? family :
+             (_isvertical ? _m[AC] : _m[AB]) ))
+
     tfam=${_n[$family]}
-    sibling=$((family &= ~target))
     sib=${_n[$sibling]}
+    tdest=i34X${_n[$dest]}    
 
-    # if sibling is visible, tdest (destination)
-    # otherwise main container
-    destination=$((
-      sibling & _visible ? family : 
-      _isvertical ? _m[AC] : _m[AB]
-    ))
-
-    tdest=i34X${_n[$destination]}
+    # if tdest is main container, trg is first in family
+    if ((_isvertical && dest == _m[AC])); then
+      familycreate "$trg"
+      famshow=1
     
-    # if if no containers are visible create layout
-    if [[ -z ${i3list[LVI]} ]]; then
-      layoutcreate "$trg"
+    elif ((!_isvertical && dest == _m[AB])); then
+      familycreate "$trg"
+      famshow=1
     else
-      # if tdest is XAB, trg is first in family
-      if { ((_isvertical)) && [[ $tdest = i34XAC ]] ;}; then
-        familycreate "$trg"
-        famshow=1
-      elif { [[ ${I3FYRA_ORIENTATION,,} != vertical ]] && [[ $tdest = i34XAB ]] ;}; then
-        familycreate "$trg"
-        famshow=1
-      else
-        # WSA = active workspace
-        messy "[con_mark=i34${trg}]" \
-          move to workspace "${i3list[WSA]}", \
-          floating disable, move to mark "$tdest"
-      fi
-
-      # swap - what to swap
-      swap=()
-
-      if ((_isvertical)); then
-        [[ $tdest = i34XAC ]] && [[ $sib =~ A|B ]] \
-          && swap=("X$tfam" "X${i3list[LAL]/$tfam/}")
-
-        [[ $tdest = i34X${tfam} ]] && [[ $sib =~ B|D ]] \
-          && swap=("$trg" "${tfam/$trg/}")
-
-        if [[ $tdest = i34XAC ]]; then
-          tspl=${i3list[MAC]}  # stored split
-          tdim=${i3list[WFH]}  # workspace width
-          tmrk=AC
-        else
-          tspl=${i3list[M${tfam}]}
-          tdim=${i3list[WFW]}      
-          tmrk=$tfam 
-        fi
-
-        [[ ${#swap[@]} -gt 0 ]] && {
-          messy "[con_mark=i34${swap[0]}]" \
-            swap container with mark "i34${swap[1]}"
-        }
-
-        [[ -n $tspl ]] \
-          && { ((tdim==i3list[WFW])) || ((_famact!=1)) ;} && {
-            i3list[S${tmrk}]=$((tdim/2))
-            eval "applysplits $tmrk=$tspl"
-        }
-      else
-        [[ $tdest = i34XAB ]] && [[ $sib =~ A|C ]] \
-          && swap=("X$tfam" "X${i3list[LAL]/$tfam/}")
-
-        [[ $tdest = i34X${tfam} ]] && [[ $sib =~ C|D ]] \
-          && swap=("$trg" "${tfam/$trg/}")
-
-        if [[ $tdest = i34XAB ]]; then
-          tspl=${i3list[MAB]}  # stored split
-          tdim=${i3list[WFW]}  # workspace width
-          tmrk=AB
-        else
-          tspl=${i3list[M${tfam}]}
-          tdim=${i3list[WFH]}      
-          tmrk=$tfam 
-        fi
-
-        [[ ${#swap[@]} -gt 0 ]] && {
-          messy "[con_mark=i34${swap[0]}]" \
-            swap container with mark "i34${swap[1]}"
-        }
-
-        [[ -n $tspl ]] \
-          && { ((tdim==i3list[WFH])) || ((_famact!=1)) ;} && {
-            i3list[S${tmrk}]=$((tdim/2))
-            eval "applysplits $tmrk=$tspl"
-        }
-      fi
-     
+      # WSA = active workspace
+      messy "[con_mark=i34${trg}]" \
+        move to workspace "${i3list[WSA]}", \
+        floating disable, move to mark "$tdest"
     fi
 
-    i3list[LVI]+=$trg
-    i3list[LHI]=${i3list[LHI]/$trg/}
+    if ((_isvertical)); then
+      mainsplit=AC
+      mainfam=AB
+      sibgroup=BD
+      size1=${i3list[WFH]}
+      size2=${i3list[WFW]}
+    else
+      mainsplit=AB
+      mainfam=AC
+      sibgroup=CD
+      size1=${i3list[WFW]}
+      size2=${i3list[WFH]}
+    fi
+
+    # swap - what to swap
+    ((dest == _m[$mainsplit] && sibling & _m[$mainfam])) \
+      && swap=("X$tfam" "X${i3list[LAL]/$tfam/}")
+
+    ((dest == _m[$tfam] && sibling & _m[$sibgroup])) \
+      && swap=("$trg" "$sib")
+
+    if ((dest == _m[$mainsplit])); then
+      tspl=${i3list[M$mainsplit]}  # stored split
+      tdim=$size1                  # workspace width
+      tmrk=$mainsplit
+    else
+      tspl=${i3list[M${tfam}]}
+      tdim=$size2     
+      tmrk=$tfam 
+    fi
+
+    ((${#swap[@]})) && {
+      messy "[con_mark=i34${swap[0]}]" \
+        swap container with mark "i34${swap[1]}"
+    }
+
+    ((tspl)) \
+      && ((tdim==size2 || !_famact)) && {
+        i3list[S${tmrk}]=$((tdim/2))
+        applysplits "$tmrk=$tspl"
+    }
 
     ((_visible |= target))
-    ((_hidden  &= ~target))
+    ((_hiddent &= ~target))
 
     # bring the whole family
-    [[ ${famshow:-} = 1 ]] && [[ $sib =~ [${i3list[LHI]}] ]] \
-      && containershow "$sib"
+    ((famshow && sibling & _hidden)) && containershow "$sib"
+
   else
     containercreate "$trg"
   fi
