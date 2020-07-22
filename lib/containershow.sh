@@ -123,6 +123,9 @@ containershow(){
     i3list[LVI]+=$trg
     i3list[LHI]=${i3list[LHI]/$trg/}
 
+    ((_visible |= target))
+    ((_hidden &= ~target))
+
     # bring the whole family
     [[ ${famshow:-} = 1 ]] && [[ $sib =~ [${i3list[LHI]}] ]] \
       && containershow "$sib"
