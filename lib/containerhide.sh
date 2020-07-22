@@ -40,10 +40,11 @@ containerhide(){
   i3list[LVI]=${i3list[LVI]:-X}
 
   ((_visible &= ~target))
+  ((_hidden  |= target))
 
   # if trg is last of it's fam, note it.
   # else focus sib
-  (( ! sibling & _visible ))      \
+  ((! (sibling & _visible) ))       \
     && _v+=("i34F${tfam}" "$trg") \
     || i3list[SIBFOC]=$sib
 
@@ -53,7 +54,7 @@ containerhide(){
     i3list[M${mainsplit}]=$mainsize
   }
 
-  (( famsize && famsize!=ref2)) && {
+  ((famsize && famsize!=ref2)) && {
     _v+=("i34M${tfam}" "$famsize")
     i3list[M${tfam}]=$famsize
   }

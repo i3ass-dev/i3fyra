@@ -7,24 +7,27 @@ containershow(){
   # show target ($1/trg) container (A|B|C|D)
   # if it already is visible, do nothing.
   # if it doesn't exist, create it 
-  local trg sts tfam sib tdest famshow tmrk tspl tdim
+  local tfam sib tdest famshow tmrk tspl tdim
 
-  # trg = target container
+  local trg=$1 # trg = target container
   # sts = status (none|visible|hidden)
 
-  trg=$1
+  declare -i target
 
-  # trg is not legal
-  [[ ! $trg =~ [${i3list[LAL]:-}] ]] && exit 1
+  target=${_m[$trg]}
 
-  sts=none
-  [[ $trg =~ [${i3list[LVI]:-}] ]] && sts=visible
-  [[ $trg =~ [${i3list[LHI]:-}] ]] && sts=hidden
+  ((target & _m[ABCD])) \
+    || ERX "$trg is not a containername (ABCD)"
 
-  case "$sts" in
-    visible ) return 0;;
-    none    ) containercreate "$trg" ;;
-    hidden  )
+  # status=$((target&_visible?1:(target&_hidden)?-1:0))
+  # sts=none
+  # [[ $trg =~ [${i3list[LVI]:-}] ]] && sts=visible
+  # [[ $trg =~ [${i3list[LHI]:-}] ]] && sts=hidden
+
+  case $((target&_visible?1:(target&_hidden)?-1:0)) in
+     1  ) return 0 ;;               # visible
+     0  ) containercreate "$trg" ;; # doesn't exist
+    -1  )                           # hidden
       
       # sib = sibling, tfam = family
       if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then

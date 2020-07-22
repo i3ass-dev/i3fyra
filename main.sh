@@ -13,8 +13,7 @@ main(){
   declare -g  _msgstring # combined i3-msg
   declare -g  _sizstring # combined resize i3-msg
 
-  declare -gi _existing
-  declare -gi _visible
+  declare -gi _existing _visible _hidden
   declare -gi _isvertical=0
 
   declare -gi _famact # ?

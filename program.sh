@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.622
+i3fyra - version: 0.642
 updated: 2020-07-22 by budRich
 EOB
 }
@@ -28,8 +28,7 @@ main(){
   declare -g  _msgstring # combined i3-msg
   declare -g  _sizstring # combined resize i3-msg
 
-  declare -gi _existing
-  declare -gi _visible
+  declare -gi _existing _visible _hidden
   declare -gi _isvertical=0
 
   declare -gi _famact # ?
@@ -239,11 +238,11 @@ bitwiseinit() {
   # i3list[LVI]=DCBA # Visible i3fyra containers
 
   for k in A B C D ; do
-    [[ ${i3list[LEX]} =~ $k ]] \
-      && _existing=$((_existing | _m[k]))
-    [[ ${i3list[LVI]} =~ $k ]] \
-      && _visible=$((_visible  | _m[k]))
+    [[ ${i3list[LHI]} =~ $k ]] && ((_hidden |= _m[k]))
+    [[ ${i3list[LVI]} =~ $k ]] && ((_visible|= _m[k]))
   done
+
+  _existing=$((_hidden | _visible))
 }
 
 cleanup() {
@@ -260,6 +259,7 @@ cleanup() {
   ((__o[verbose])) && {
     _=${_n[1]}
     _=$_isvertical
+    _=$_existing
     local delta=$(( ($(date +%s%N)-_stamp) /1000 ))
     local time=$(((delta / 1000) % 1000))
     ERM  $'\n'"${time}ms"
@@ -300,54 +300,60 @@ containerhide(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local trg tfam
-
-  trg=$1
+  local trg=$1
+  local tfam sib mainsplit
 
   [[ ${#trg} -gt 1 ]] && multihide "$trg" && return
 
-  [[ $trg =~ A|C ]] && tfam=AC || tfam=BD
+  declare -i family target sibling ref1 ref2 mainsize famsize
+
+  target=${_m[$trg]}
+
   if ((_isvertical)); then
-    [[ $trg =~ A|B ]] && tfam=AB || tfam=CD
+    mainsplit=AC
+    ref1=${i3list[WFH]}
+    ref2=${i3list[WFW]}
+    family=$((target & _m[AB]?_m[AB]:_m[CD]))
+  else
+    mainsplit=AB
+    ref1=${i3list[WFW]}
+    ref2=${i3list[WFH]}
+    family=$((target & _m[AC]?_m[AC]:_m[BD]))
   fi
 
-  messy "[con_mark=i34${trg}]" focus, floating enable, \
-    move absolute position 0 px 0 px, \
-    resize set $((i3list[WFW]/2)) px $((i3list[WFH]/2)) px, \
-    move scratchpad
+  tfam=${_n[$family]}
+  mainsize=${i3list[S$mainsplit]}
+  famsize=${i3list[S$tfam]}
+
+  sibling=$((family & ~target))
+  sib=${_n[$sibling]}
+
+  messy "[con_mark=i34${trg}]" move scratchpad
+
   # add to trg to hid
   i3list[LHI]+=$trg
   i3list[LVI]=${i3list[LVI]/$trg/}
   i3list[LVI]=${i3list[LVI]:-X}
 
+  ((_visible &= ~target))
+  ((_hidden  |= target))
+
   # if trg is last of it's fam, note it.
   # else focus sib
-  [[ ! ${tfam/$trg/} =~ [${i3list[LVI]}] ]] \
+  ((! (sibling & _visible) ))       \
     && _v+=("i34F${tfam}" "$trg") \
-    || i3list[SIBFOC]=${tfam/$trg/}
+    || i3list[SIBFOC]=$sib
 
   # note splits
-  if ((_isvertical)); then
-    [[ -n ${i3list[SAC]} ]] && ((i3list[SAC]!=i3list[WFH])) && {
-      _v+=("i34MAC" "${i3list[SAC]}")
-      i3list[MAC]=${i3list[SAC]}
-    }
+  ((mainsize && mainsize!=ref1)) && {
+    _v+=("i34M${mainsplit}" "$mainsize")
+    i3list[M${mainsplit}]=$mainsize
+  }
 
-    [[ -n ${i3list[S${tfam}]} ]] && ((${i3list[S${tfam}]}!=i3list[WFW])) && {
-      _v+=("i34M${tfam}" "${i3list[S${tfam}]}")
-      i3list[M${tfam}]=${i3list[S${tfam}]}
-    }
-  else
-    [[ -n ${i3list[SAB]} ]] && ((i3list[SAB]!=i3list[WFW])) && {
-      _v+=("i34MAB" "${i3list[SAB]}")
-      i3list[MAB]=${i3list[SAB]}
-    }
-
-    [[ -n ${i3list[S${tfam}]} ]] && ((${i3list[S${tfam}]}!=i3list[WFH])) && {
-      _v+=("i34M${tfam}" "${i3list[S${tfam}]}")
-      i3list[M${tfam}]=${i3list[S${tfam}]}
-    }
-  fi
+  ((famsize && famsize!=ref2)) && {
+    _v+=("i34M${tfam}" "$famsize")
+    i3list[M${tfam}]=$famsize
+  }
 }
 
 
@@ -359,24 +365,27 @@ containershow(){
   # show target ($1/trg) container (A|B|C|D)
   # if it already is visible, do nothing.
   # if it doesn't exist, create it 
-  local trg sts tfam sib tdest famshow tmrk tspl tdim
+  local tfam sib tdest famshow tmrk tspl tdim
 
-  # trg = target container
+  local trg=$1 # trg = target container
   # sts = status (none|visible|hidden)
 
-  trg=$1
+  declare -i target
 
-  # trg is not legal
-  [[ ! $trg =~ [${i3list[LAL]:-}] ]] && exit 1
+  target=${_m[$trg]}
 
-  sts=none
-  [[ $trg =~ [${i3list[LVI]:-}] ]] && sts=visible
-  [[ $trg =~ [${i3list[LHI]:-}] ]] && sts=hidden
+  ((target & _m[ABCD])) \
+    || ERX "$trg is not a containername (ABCD)"
 
-  case "$sts" in
-    visible ) return 0;;
-    none    ) containercreate "$trg" ;;
-    hidden  )
+  # status=$((target&_visible?1:(target&_hidden)?-1:0))
+  # sts=none
+  # [[ $trg =~ [${i3list[LVI]:-}] ]] && sts=visible
+  # [[ $trg =~ [${i3list[LHI]:-}] ]] && sts=hidden
+
+  case $((target&_visible?1:(target&_hidden)?-1:0)) in
+     1  ) return 0 ;;               # visible
+     0  ) containercreate "$trg" ;; # doesn't exist
+    -1  )                           # hidden
       
       # sib = sibling, tfam = family
       if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
