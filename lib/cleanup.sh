@@ -6,13 +6,10 @@ cleanup() {
 
   ((__o[verbose])) || qflag='-q'
 
-  ((_dummy)) \
-    && messy "[con_id=$_dummy]" kill
+  ((${#_v[@]}))   && varset "${_v[@]}"
 
-  ((${#_v[@]})) && varset "${_v[@]}"
-
-  ((${#_msg[@]})) && ((!__o[dryrun])) \
-    && i3-msg "${qflag:-}" "${_msg[@]}"
+  [[ -n $_msgstring ]] && i3-msg "${qflag:-}" "$_msgstring"
+  [[ -n $_sizstring ]] && i3-msg "${qflag:-}" "$_sizstring"
 
   ((__o[verbose])) && {
     _=${_n[1]}

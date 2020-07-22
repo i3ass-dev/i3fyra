@@ -2,16 +2,21 @@
 
 _source=$(readlink -f "${BASH_SOURCE[0]}")
 _dir=${_source%/*}
+ta=$(< "$_dir/tests/array")
 
 while read -r ; do
   clear
   bashbud --bump "$_dir"
   shellcheck "$_dir/program.sh" && {
-    # time(
-    #   while ((++i<50));do 
-    #     "$_dir/program.sh" -i typiskt --json "$_dir/t/tree.json"
-    #   done >/dev/null
-    # )
+
+    time(
+      while ((++i<50));do 
+        "$_dir/program.sh" \
+           --move up       \
+           --array "$ta"   \
+           --dryrun
+      done > /dev/null 2>&1
+    )
     :
   }
 done < <(

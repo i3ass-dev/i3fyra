@@ -2,7 +2,7 @@
 
 togglefloat(){
 
-  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}()"
   
   local trg
 

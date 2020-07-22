@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.6
+i3fyra - version: 0.605
 updated: 2020-07-22 by budRich
 EOB
 }
@@ -21,13 +21,12 @@ main(){
 
   trap 'cleanup' EXIT
 
-  local cmd target
-
-  declare -gA _m     # bitwise masks _m[A]=1
-  declare -gA i3list # globals array
-  declare -ga _n     # bitwise names _n[1]=A
-  declare -ga _v     # "i3var"s to set
-  declare -ga _msg   # i3-msg's
+  declare -gA _m        # bitwise masks _m[A]=1
+  declare -gA i3list    # globals array
+  declare -ga _n        # bitwise names _n[1]=A
+  declare -ga _v        # "i3var"s to set
+  declare -g _msgstring # combined i3-msg
+  declare -g _sizstring # combined resize i3-msg
 
   declare -gi _existing
   declare -gi _visible
@@ -52,9 +51,9 @@ main(){
   eval "${__o[array]:-$(i3list "${lopt[@]}")}"
   unset 'lopt[@]'
 
-  bitwiseinit
-
   ((i3list[WSF])) && i3list[WSF]=${I3FYRA_WS:-${i3list[WSA]}}
+
+  bitwiseinit
 
   if [[ -n ${__o[show]} ]]; then
     containershow "${__o[show]}"
@@ -236,13 +235,10 @@ cleanup() {
 
   ((__o[verbose])) || qflag='-q'
 
-  ((_dummy)) \
-    && messy "[con_id=$_dummy]" kill
+  ((${#_v[@]}))   && varset "${_v[@]}"
 
-  ((${#_v[@]})) && varset "${_v[@]}"
-
-  ((${#_msg[@]})) && ((!__o[dryrun])) \
-    && i3-msg "${qflag:-}" "${_msg[@]}"
+  [[ -n $_msgstring ]] && i3-msg "${qflag:-}" "$_msgstring"
+  [[ -n $_sizstring ]] && i3-msg "${qflag:-}" "$_sizstring"
 
   ((__o[verbose])) && {
     _=${_n[1]}
@@ -657,9 +653,18 @@ layoutcreate(){
 }
 
 messy() {
-  ((__o[verbose])) && ERM "m $*"
-  _msg+=("$*;")
-  # i3-msg -q "$@"
+
+  (( __o[verbose] )) && ERM "m $*"
+
+  (( __o[dryrun]  )) || {
+    if [[ $* =~ resize ]]; then
+      _sizstring+="$*;"
+    else
+      _msgstring+="$*;"
+    fi
+  }
+
+  # i3-msg -q "$*"
 }
 
 multihide(){
@@ -797,7 +802,7 @@ swapmeet(){
 
 togglefloat(){
 
-  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}()"
   
   local trg
 

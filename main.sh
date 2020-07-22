@@ -6,13 +6,12 @@ main(){
 
   trap 'cleanup' EXIT
 
-  local cmd target
-
-  declare -gA _m     # bitwise masks _m[A]=1
-  declare -gA i3list # globals array
-  declare -ga _n     # bitwise names _n[1]=A
-  declare -ga _v     # "i3var"s to set
-  declare -ga _msg   # i3-msg's
+  declare -gA _m        # bitwise masks _m[A]=1
+  declare -gA i3list    # globals array
+  declare -ga _n        # bitwise names _n[1]=A
+  declare -ga _v        # "i3var"s to set
+  declare -g _msgstring # combined i3-msg
+  declare -g _sizstring # combined resize i3-msg
 
   declare -gi _existing
   declare -gi _visible
@@ -37,9 +36,9 @@ main(){
   eval "${__o[array]:-$(i3list "${lopt[@]}")}"
   unset 'lopt[@]'
 
-  bitwiseinit
-
   ((i3list[WSF])) && i3list[WSF]=${I3FYRA_WS:-${i3list[WSA]}}
+
+  bitwiseinit
 
   if [[ -n ${__o[show]} ]]; then
     containershow "${__o[show]}"
