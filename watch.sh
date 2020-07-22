@@ -4,6 +4,8 @@ _source=$(readlink -f "${BASH_SOURCE[0]}")
 _dir=${_source%/*}
 ta=$(< "$_dir/tests/array")
 
+trap 'tput clear' SIGWINCH
+
 while read -r ; do
   clear
   bashbud --bump "$_dir"
