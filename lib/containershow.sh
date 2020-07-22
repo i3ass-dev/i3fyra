@@ -20,9 +20,9 @@ containershow(){
   ((target & _m[ABCD])) \
     || ERX "$trg is not a valid container name (ABCD)"
 
-  if ((target & _visible)); then
+  if [[ ${i3list[LVI]} =~ $trg ]]; then
     return 0
-  elif ((target & _hidden)); then
+  elif [[ ${i3list[LHI]} =~ $trg ]]; then
     # sib = sibling, tfam = family
     ((_isvertical)) \
       && family=$((target & _m[AB]?_m[AB]:_m[CD])) \
@@ -124,7 +124,7 @@ containershow(){
     i3list[LHI]=${i3list[LHI]/$trg/}
 
     ((_visible |= target))
-    ((_hidden &= ~target))
+    ((_hidden  &= ~target))
 
     # bring the whole family
     [[ ${famshow:-} = 1 ]] && [[ $sib =~ [${i3list[LHI]}] ]] \
