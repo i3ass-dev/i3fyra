@@ -59,7 +59,10 @@ main(){
     windowmove "${__o[move]}"
     [[ -z ${i3list[SIBFOC]} ]] \
       && messy "[con_id=${i3list[AWC]}]" focus
-      
+
+  else
+    ERH "no valid options"
+
   fi
 
   [[ -n ${i3list[SIBFOC]} ]] \

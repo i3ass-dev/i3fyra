@@ -6,8 +6,8 @@ containercreate(){
 
   local trg=$1
 
-  # error can't create container without window
-  [[ -z ${i3list[TWC]} ]] && exit 1
+  [[ -z ${i3list[TWC]} ]] \
+    && ERX "can't create container without window"
 
   dummywindow dummy
 

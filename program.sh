@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.615
+i3fyra - version: 0.622
 updated: 2020-07-22 by budRich
 EOB
 }
@@ -74,7 +74,10 @@ main(){
     windowmove "${__o[move]}"
     [[ -z ${i3list[SIBFOC]} ]] \
       && messy "[con_id=${i3list[AWC]}]" focus
-      
+
+  else
+    ERH "no valid options"
+
   fi
 
   [[ -n ${i3list[SIBFOC]} ]] \
@@ -270,8 +273,8 @@ containercreate(){
 
   local trg=$1
 
-  # error can't create container without window
-  [[ -z ${i3list[TWC]} ]] && exit 1
+  [[ -z ${i3list[TWC]} ]] \
+    && ERX "can't create container without window"
 
   dummywindow dummy
 
@@ -301,11 +304,10 @@ containerhide(){
 
   trg=$1
 
-
   [[ ${#trg} -gt 1 ]] && multihide "$trg" && return
 
   [[ $trg =~ A|C ]] && tfam=AC || tfam=BD
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+  if ((_isvertical)); then
     [[ $trg =~ A|B ]] && tfam=AB || tfam=CD
   fi
 
@@ -320,34 +322,29 @@ containerhide(){
 
   # if trg is last of it's fam, note it.
   # else focus sib
-    # && i3var set "i34F${tfam}" "$trg" \
   [[ ! ${tfam/$trg/} =~ [${i3list[LVI]}] ]] \
     && _v+=("i34F${tfam}" "$trg") \
     || i3list[SIBFOC]=${tfam/$trg/}
 
   # note splits
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+  if ((_isvertical)); then
     [[ -n ${i3list[SAC]} ]] && ((i3list[SAC]!=i3list[WFH])) && {
-      # i3var set "i34MAC" "${i3list[SAC]}"
       _v+=("i34MAC" "${i3list[SAC]}")
       i3list[MAC]=${i3list[SAC]}
     }
 
     [[ -n ${i3list[S${tfam}]} ]] && ((${i3list[S${tfam}]}!=i3list[WFW])) && {
-      # i3var set "i34M${tfam}" "${i3list[S${tfam}]}" 
       _v+=("i34M${tfam}" "${i3list[S${tfam}]}")
       i3list[M${tfam}]=${i3list[S${tfam}]}
     }
   else
     [[ -n ${i3list[SAB]} ]] && ((i3list[SAB]!=i3list[WFW])) && {
       _v+=("i34MAB" "${i3list[SAB]}")
-      # i3var set "i34MAB" "${i3list[SAB]}"
       i3list[MAB]=${i3list[SAB]}
     }
 
     [[ -n ${i3list[S${tfam}]} ]] && ((${i3list[S${tfam}]}!=i3list[WFH])) && {
       _v+=("i34M${tfam}" "${i3list[S${tfam}]}")
-      # i3var set "i34M${tfam}" "${i3list[S${tfam}]}" 
       i3list[M${tfam}]=${i3list[S${tfam}]}
     }
   fi
@@ -512,9 +509,17 @@ dummywindow() {
   messy "[con_id=$id]" floating disable, mark "$mark"
 }
 
-ERM(){ >&2 echo "$*"; }
-ERR(){ >&2 echo "[WARNING]" "$*"; }
-ERX(){ >&2 echo "[ERROR]" "$*" && exit 1 ; }
+set -E
+trap '[ "$?" -ne 98 ] || exit 98' ERR
+
+ERX() { >&2 echo  "[ERROR] $*" ; exit 98 ;}
+ERR() { >&2 echo  "[WARNING] $*"  ;}
+ERM() { >&2 echo  "$*"  ;}
+ERH(){
+  ___printhelp >&2
+  [[ -n "$*" ]] && printf '\n%s\n' "$*" >&2
+  exit 98
+}
 
 familycreate(){
 
