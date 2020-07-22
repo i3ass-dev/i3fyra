@@ -6,17 +6,17 @@ ta=$(< "$_dir/tests/array")
 
 trap 'tput clear' SIGWINCH
 
+cmd1=("$_dir/program.sh" --move left --array "$ta" --dryrun)
+# cmd2=("$_dir/program.sh" --move up --array "$ta" --dryrun)
+
 while read -r ; do
   clear
   bashbud --bump "$_dir"
   shellcheck "$_dir/program.sh" && {
-
+    "${cmd1[@]}" --verbose
     time(
       while ((++i<50));do 
-        "$_dir/program.sh" \
-           --move up       \
-           --array "$ta"   \
-           --dryrun
+        "${cmd1[@]}"
       done > /dev/null 2>&1
     )
     :

@@ -25,6 +25,8 @@ containercreate(){
     move scratchpad
   # add to trg to hid
   i3list[LHI]+=$trg
+
+  ((_hidden |= _m[$trg]))
   # run container show to show container
   containershow "$trg"
 }

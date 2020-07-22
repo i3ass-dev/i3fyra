@@ -7,55 +7,46 @@ containershow(){
   # show target ($1/trg) container (A|B|C|D)
   # if it already is visible, do nothing.
   # if it doesn't exist, create it 
-  local trg sts tfam sib tdest famshow tmrk tspl tdim
+  local trg tfam sib tdest famshow tmrk tspl tdim
 
   # trg = target container
-  # sts = status (none|visible|hidden)
 
   trg=$1
 
-  declare -i target
+  declare -i target family sibling destination
 
   target=${_m[$trg]}
 
   ((target & _m[ABCD])) \
     || ERX "$trg is not a valid container name (ABCD)"
-  
-  ERM "$trg : $(tobin $_visible)"
 
   if ((target & _visible)); then
     return 0
   elif ((target & _hidden)); then
     # sib = sibling, tfam = family
-    if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-      [[ $trg =~ [AB] ]] \
-        && tfam=AB \
-        || tfam=CD
-    else
-      [[ $trg =~ [AC] ]] \
-        && tfam=AC \
-        || tfam=BD
-    fi
+    ((_isvertical)) \
+      && family=$((target & _m[AB]?_m[AB]:_m[CD])) \
+      || family=$((target & _m[AC]?_m[AC]:_m[BD]))
 
-    sib=${tfam/$trg/}
-
+    tfam=${_n[$family]}
+    sibling=$((family &= ~target))
+    sib=${_n[$sibling]}
 
     # if sibling is visible, tdest (destination)
-    # otherwise XAB, main container
-    if [[ ${sib} =~ [${i3list[LVI]}] ]]; then
-      tdest="i34X${tfam}"
-    elif [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-      tdest=i34XAC
-    else
-      tdest=i34XAB
-    fi
+    # otherwise main container
+    destination=$((
+      sibling & _visible ? family : 
+      _isvertical ? _m[AC] : _m[AB]
+    ))
+
+    tdest=i34X${_n[$destination]}
     
     # if if no containers are visible create layout
     if [[ -z ${i3list[LVI]} ]]; then
       layoutcreate "$trg"
     else
       # if tdest is XAB, trg is first in family
-      if { [[ ${I3FYRA_ORIENTATION,,} = vertical ]] && [[ $tdest = i34XAC ]] ;}; then
+      if { ((_isvertical)) && [[ $tdest = i34XAC ]] ;}; then
         familycreate "$trg"
         famshow=1
       elif { [[ ${I3FYRA_ORIENTATION,,} != vertical ]] && [[ $tdest = i34XAB ]] ;}; then
@@ -71,7 +62,7 @@ containershow(){
       # swap - what to swap
       swap=()
 
-      if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+      if ((_isvertical)); then
         [[ $tdest = i34XAC ]] && [[ $sib =~ A|B ]] \
           && swap=("X$tfam" "X${i3list[LAL]/$tfam/}")
 
