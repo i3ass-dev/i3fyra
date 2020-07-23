@@ -2,8 +2,12 @@
 
 bitwiseinit() {
   
-  _m[A]=$((1 << 0)) _m[B]=$((1 << 1))
-  _m[C]=$((1 << 2)) _m[D]=$((1 << 3))
+  local k
+  declare -i i
+
+  for k in A B C D l r u d; do
+    _m[$k]=$((1<<i++))
+  done
 
   _m[AB]=$((_m[A] | _m[B])) _m[AC]=$((_m[A] | _m[C]))
   _m[BD]=$((_m[B] | _m[D])) _m[CD]=$((_m[C] | _m[D]))

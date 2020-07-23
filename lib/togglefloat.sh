@@ -3,8 +3,9 @@
 togglefloat(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}()"
-  
-  
+
+  local trg
+  declare -i main=${_m[$I3FYRA_MAIN_CONTAINER]}
 
   # AWF - 1 = floating; 0 = tiled
   if ((i3list[AWF]==1)); then
@@ -14,12 +15,7 @@ togglefloat(){
       messy "[con_id=${i3list[AWC]}]" floating disable
       return
     fi
-
-    local trg
-
-    declare -i main
-    main=${_m[$I3FYRA_MAIN_CONTAINER]}
-
+    
     if ((main & _visible)); then
       trg=$I3FYRA_MAIN_CONTAINER
     elif ((_visible)); then
