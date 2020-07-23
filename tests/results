@@ -1,6 +1,7 @@
  
 f windowmove(left)
 f familyshow(BD)
+f containershow(B)
 f familycreate(B)
 m [con_mark=i34XBD] unmark
 f dummywindow()
@@ -12,9 +13,11 @@ m mark i34XBD
 m [con_mark=dummy] layout splitv, split v
 m [con_mark=dummy] kill
 m [con_mark=i34XBD] move right
+f containershow(D)
 m [con_mark=i34D] move to workspace 1, floating disable, move to mark i34XBD
 f applysplits(BD=252)
 m [con_mark=i34B] resize set height 252 px
+f containershow(D)
 f applysplits(AB=1520)
 m [con_mark=i34XAC] resize set width 1520 px
 m [con_id=94891844684640] focus

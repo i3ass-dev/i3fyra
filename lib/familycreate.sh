@@ -4,49 +4,34 @@ familycreate(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local trg tfam ofam
+  local trg ourfam theirfam split dir
+  declare -i target ourfamily  theirfamily f1 f2
+
   trg=$1
+  target=${_m[$trg]}
 
-  if [[ $trg =~ A|C ]];then
-    tfam=AC
-    ofam=BD
-  else
-    ofam=AC
-    tfam=BD
-  fi
+  ((_isvertical)) \
+    && split=h dir=down  f1=${_m[AB]} f2=${_m[CD]} \
+    || split=v dir=right f1=${_m[AC]} f2=${_m[BD]}
 
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    if [[ $trg =~ A|B ]];then
-      tfam=AB
-      ofam=CD
-    else
-      ofam=AB
-      tfam=CD
-    fi
-  fi
+  ourfamily=$((target & f1 ? f1 : f2))
+  theirfamily=$((_m[ABCD] & ~ourfamily))
+  ourfam=${_n[$ourfamily]} theirfam=${_n[$theirfamily]}
 
-  messy "[con_mark=i34X${tfam}]" unmark
-
+  messy "[con_mark=i34X${ourfam}]" unmark
   dummywindow dummy
-  
   messy "[con_mark=dummy]" \
-    move to mark "i34X${ofam}", split v, layout tabbed
+    move to mark "i34X${theirfam}", split v, layout tabbed
 
   messy "[con_mark=i34${trg}]" \
     move to workspace "${i3list[WSA]}", \
     floating disable, \
     move to mark dummy
   messy "[con_mark=dummy]" focus, focus parent
-  messy mark i34X${tfam}
+  messy mark i34X${ourfam}
 
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    messy "[con_mark=dummy]" layout splith, split h
-    messy "[con_mark=dummy]" kill
-    messy "[con_mark=i34X${tfam}]" move down
-  else
-    messy "[con_mark=dummy]" layout splitv, split v
-    messy "[con_mark=dummy]" kill
-    messy "[con_mark=i34X${tfam}]" move right
-  fi
-
+  messy "[con_mark=dummy]" \
+    layout "split${split}", split "$split"
+  messy "[con_mark=dummy]" kill
+  messy "[con_mark=i34X${ourfam}]" move "$dir"
 }

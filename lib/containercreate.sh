@@ -19,12 +19,7 @@ containercreate(){
   messy "[con_mark=dummy]" kill
     
   # after creation, move cont to scratch
-  messy "[con_mark=i34${trg}]" focus, floating enable, \
-    move absolute position 0 px 0 px, \
-    resize set $((i3list[WFW]/2)) px $((i3list[WFH]/2)) px, \
-    move scratchpad
-  # add to trg to hid
-  i3list[LHI]+=$trg
+  messy "[con_mark=i34${trg}]" move scratchpad
 
   ((_hidden |= _m[$trg]))
   # run container show to show container

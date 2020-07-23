@@ -3,8 +3,8 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.742
-updated: 2020-07-22 by budRich
+i3fyra - version: 0.764
+updated: 2020-07-23 by budRich
 EOB
 }
 
@@ -286,12 +286,7 @@ containercreate(){
   messy "[con_mark=dummy]" kill
     
   # after creation, move cont to scratch
-  messy "[con_mark=i34${trg}]" focus, floating enable, \
-    move absolute position 0 px 0 px, \
-    resize set $((i3list[WFW]/2)) px $((i3list[WFH]/2)) px, \
-    move scratchpad
-  # add to trg to hid
-  i3list[LHI]+=$trg
+  messy "[con_mark=i34${trg}]" move scratchpad
 
   ((_hidden |= _m[$trg]))
   # run container show to show container
@@ -361,6 +356,9 @@ containerhide(){
 
 
 containershow(){
+
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
+  
   # show target ($1/trg) container (A|B|C|D)
   # if it already is visible, do nothing.
   # if it doesn't exist, create it 
@@ -495,51 +493,36 @@ familycreate(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local trg tfam ofam
+  local trg ourfam theirfam split dir
+  declare -i target ourfamily  theirfamily f1 f2
+
   trg=$1
+  target=${_m[$trg]}
 
-  if [[ $trg =~ A|C ]];then
-    tfam=AC
-    ofam=BD
-  else
-    ofam=AC
-    tfam=BD
-  fi
+  ((_isvertical)) \
+    && split=h dir=down  f1=${_m[AB]} f2=${_m[CD]} \
+    || split=v dir=right f1=${_m[AC]} f2=${_m[BD]}
 
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    if [[ $trg =~ A|B ]];then
-      tfam=AB
-      ofam=CD
-    else
-      ofam=AB
-      tfam=CD
-    fi
-  fi
+  ourfamily=$((target & f1 ? f1 : f2))
+  theirfamily=$((_m[ABCD] & ~ourfamily))
+  ourfam=${_n[$ourfamily]} theirfam=${_n[$theirfamily]}
 
-  messy "[con_mark=i34X${tfam}]" unmark
-
+  messy "[con_mark=i34X${ourfam}]" unmark
   dummywindow dummy
-  
   messy "[con_mark=dummy]" \
-    move to mark "i34X${ofam}", split v, layout tabbed
+    move to mark "i34X${theirfam}", split v, layout tabbed
 
   messy "[con_mark=i34${trg}]" \
     move to workspace "${i3list[WSA]}", \
     floating disable, \
     move to mark dummy
   messy "[con_mark=dummy]" focus, focus parent
-  messy mark i34X${tfam}
+  messy mark i34X${ourfam}
 
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    messy "[con_mark=dummy]" layout splith, split h
-    messy "[con_mark=dummy]" kill
-    messy "[con_mark=i34X${tfam}]" move down
-  else
-    messy "[con_mark=dummy]" layout splitv, split v
-    messy "[con_mark=dummy]" kill
-    messy "[con_mark=i34X${tfam}]" move right
-  fi
-
+  messy "[con_mark=dummy]" \
+    layout "split${split}", split "$split"
+  messy "[con_mark=dummy]" kill
+  messy "[con_mark=i34X${ourfam}]" move "$dir"
 }
 
 familyhide(){
@@ -575,17 +558,20 @@ familyshow(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
 
-  local fam=$1
+  local fam=$1 trg
   local tfammem="${i3list[F${fam}]}"
-  # F${fam} - family memory
+  # i3list[Fxx] - family memory
+
+  declare -i i target
 
   _famact=1
-  for (( i = 0; i < ${#tfammem}; i++ )); do
-    [[ ${tfammem:$i:1} =~ [${i3list[LHI]}] ]] \
-      && containershow "${tfammem:$i:1}"
+  for ((i=0;i<${#tfammem};i++)); do
+    trg=${tfammem:$i:1}
+    target=${_m[$trg]}
+    ((target & _hidden)) && containershow "$trg"
   done
 
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+  if ((_isvertical)); then
     i3list[SAC]=$((i3list[WFH]/2))
     applysplits "AC=${i3list[MAC]}"
   else
