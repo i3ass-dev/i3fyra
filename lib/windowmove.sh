@@ -61,17 +61,17 @@ windowmove(){
   eval "$wizoutput"
   unset trgx trgy sx sy sw sh
 
-  declare -A swaps
+  declare -A swapon
 
   if ((_isvertical)); then
     sibdir=$((_m[l]|_m[r]))
-    swaps[l]=${_m[AC]} swaps[r]=${_m[BD]}
-    swaps[u]=${_m[AB]} swaps[d]=${_m[CD]}
+    swapon[l]=${_m[AC]} swapon[r]=${_m[BD]}
+    swapon[u]=${_m[AB]} swapon[d]=${_m[CD]}
 
   else
     sibdir=$((_m[u]|_m[d]))
-    swaps[u]=${_m[AB]} swaps[d]=${_m[CD]}
-    swaps[l]=${_m[AC]} swaps[r]=${_m[BD]}
+    swapon[u]=${_m[AB]} swapon[d]=${_m[CD]}
+    swapon[l]=${_m[AC]} swapon[r]=${_m[BD]}
 
   fi
 
@@ -89,8 +89,8 @@ windowmove(){
         containerhide "${_n[$sibling]}"
       else
         containershow "${_n[$sibling]}"
-        ((sibling & swaps[$dir])) \
-          && toswap=("i34${_n[$sibling]}" "i34${_n[$target]}")
+        ((sibling & swapon[$dir])) \
+          && swapmeet "i34${_n[$sibling]}" "i34${_n[$target]}"
       fi
     # family toggling
     else
@@ -98,15 +98,10 @@ windowmove(){
         familyhide "${_n[$relatives]}"
       else
         familyshow "${_n[$relatives]}"
-        ((relatives & swaps[$dir])) \
-          && toswap=("i34X${_n[$relatives]}" "i34X${_n[$family]}")
+        ((relatives & swapon[$dir])) \
+          && swapmeet "i34X${_n[$relatives]}" "i34X${_n[$family]}"
       fi
     fi
-    
-    [[ -n ${toswap[1]:-} ]] && {
-      swapmeet "${toswap[@]}"
-      messy "[con_id=${i3list[TWC]}]" focus
-    }
 
   else
     # trgpar is visible, if layout is tabbed just move it

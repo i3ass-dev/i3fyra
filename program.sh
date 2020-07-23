@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.868
+i3fyra - version: 0.88
 updated: 2020-07-23 by budRich
 EOB
 }
@@ -676,97 +676,58 @@ swapmeet(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local m1=$1
-  local m2=$2
-  local i k cur
-  
-  # array with containers (k=current name, v=twin name)
-  declare -A acn 
+  local m1=$1 m2=$2 tmrk old
+  declare -i tspl tdim i
+  declare -A acn
 
   messy "[con_mark=${m1}]"  swap mark "${m2}", mark i34tmp
   messy "[con_mark=${m2}]"  mark "${m1}"
   messy "[con_mark=i34tmp]" mark "${m2}"
 
-  # if targets are families, remark all containers 
-  # with their twins
+
+  # family swap, rename all existing containers with their twins
   if [[ $m1 =~ X ]]; then
-    if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+    # acn[oldname]=newname
+    if ((_isvertical)); then
       tspl="${i3list[SAC]}" tdim="${i3list[WFH]}"
       tmrk=AC
+      acn=([A]=C [B]=D [C]=A [D]=B)
+      _v+=(i3MAB "${i3list[MCD]}")
+      _v+=(i3MCD "${i3list[MAB]}")
     else
       tspl="${i3list[SAB]}" tdim="${i3list[WFW]}"
       tmrk=AB
-    fi
-  else
-    tmrk="${i3list[AFF]}"
-    tspl="${i3list[S${tmrk}]}"
-    [[ ${I3FYRA_ORIENTATION,,} = vertical ]] \
-      && tdim="${i3list[WFW]}" \
-      || tdim="${i3list[WFH]}"
-  fi
-
-  { [[ -n $tspl ]] || ((tspl != tdim)) ;} && {
-    # invert split
-    tspl=$((tdim-tspl))
-    eval "applysplits '$tmrk=$tspl'"
-  }
-
-  # family swap, rename all existing containers with their twins
-  if [[ $m1 =~ X ]]; then 
-    for (( i = 0; i < ${#i3list[LEX]}; i++ )); do
-      cur=${i3list[LEX]:$i:1}
-      if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-        case $cur in
-          A ) acn[$cur]=C ;;
-          B ) acn[$cur]=D ;;
-          C ) acn[$cur]=A ;;
-          D ) acn[$cur]=B ;;
-        esac
-      else
-        case $cur in
-          A ) acn[$cur]=B ;;
-          B ) acn[$cur]=A ;;
-          C ) acn[$cur]=D ;;
-          D ) acn[$cur]=C ;;
-        esac
-      fi
-      messy "[con_mark=i34${cur}]" mark "i34tmp${cur}"
-    done
-    for k in "${!acn[@]}"; do
-      messy "[con_mark=i34tmp${k}]" mark "i34${acn[$k]}"
-    done
-    if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-      _v+=(i3MAB "${i3list[MBD]}")
-      _v+=(i3MCD "${i3list[MAC]}")
-    else
+      acn=([A]=B [B]=A [C]=D [D]=C)
       _v+=(i3MAC "${i3list[MBD]}")
       _v+=(i3MBD "${i3list[MAC]}")
     fi
+
   else # swap within family, rename siblings
-    for (( i = 0; i < ${#i3list[AFF]}; i++ )); do
-      cur=${i3list[AFF]:$i:1}
-      if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-        case $cur in
-          A ) acn[$cur]=B ;;
-          B ) acn[$cur]=A ;;
-          C ) acn[$cur]=D ;;
-          D ) acn[$cur]=C ;;
-        esac
-      else
-        case $cur in
-          A ) acn[$cur]=C ;;
-          B ) acn[$cur]=D ;;
-          C ) acn[$cur]=A ;;
-          D ) acn[$cur]=B ;;
-        esac
-      fi
-      messy "[con_mark=i34${cur}]" mark "i34tmp${cur}"
-    done
-    for k in "${!acn[@]}"; do
-      messy "[con_mark=i34tmp${k}]" mark "i34${acn[$k]}"
-    done
+    tmrk="${i3list[AFF]}"
+    tspl="${i3list[S${tmrk}]}"
+
+    if ((_isvertical)); then
+      acn=([A]=B [B]=A [C]=D [D]=C)
+      tdim="${i3list[WFW]}"
+    else
+      acn=([A]=C [B]=D [C]=A [D]=B)
+      tdim="${i3list[WFH]}"
+    fi
   fi
 
+  for ((i =0;i< ${#i3list[LEX]};i++)); do
+    old=${i3list[LEX]:$i:1}
+    messy "[con_mark=i34${old}]" mark "i34tmp${old}"
+  done
+
+  for ((i =0;i< ${#i3list[LEX]};i++)); do
+    old=${i3list[LEX]:$i:1}
+    messy "[con_mark=i34tmp${old}]" mark "i34${acn[$old]}"
+  done
+
+  # invert split
+  ((tspl+tdim)) && applysplits "$tmrk=$((tdim-tspl))"
+  messy "[con_id=${i3list[TWC]}]" focus
 }
 
 togglefloat(){
@@ -893,17 +854,17 @@ windowmove(){
   eval "$wizoutput"
   unset trgx trgy sx sy sw sh
 
-  declare -A swaps
+  declare -A swapon
 
   if ((_isvertical)); then
     sibdir=$((_m[l]|_m[r]))
-    swaps[l]=${_m[AC]} swaps[r]=${_m[BD]}
-    swaps[u]=${_m[AB]} swaps[d]=${_m[CD]}
+    swapon[l]=${_m[AC]} swapon[r]=${_m[BD]}
+    swapon[u]=${_m[AB]} swapon[d]=${_m[CD]}
 
   else
     sibdir=$((_m[u]|_m[d]))
-    swaps[u]=${_m[AB]} swaps[d]=${_m[CD]}
-    swaps[l]=${_m[AC]} swaps[r]=${_m[BD]}
+    swapon[u]=${_m[AB]} swapon[d]=${_m[CD]}
+    swapon[l]=${_m[AC]} swapon[r]=${_m[BD]}
 
   fi
 
@@ -921,8 +882,8 @@ windowmove(){
         containerhide "${_n[$sibling]}"
       else
         containershow "${_n[$sibling]}"
-        ((sibling & swaps[$dir])) \
-          && toswap=("i34${_n[$sibling]}" "i34${_n[$target]}")
+        ((sibling & swapon[$dir])) \
+          && swapmeet "i34${_n[$sibling]}" "i34${_n[$target]}"
       fi
     # family toggling
     else
@@ -930,15 +891,10 @@ windowmove(){
         familyhide "${_n[$relatives]}"
       else
         familyshow "${_n[$relatives]}"
-        ((relatives & swaps[$dir])) \
-          && toswap=("i34X${_n[$relatives]}" "i34X${_n[$family]}")
+        ((relatives & swapon[$dir])) \
+          && swapmeet "i34X${_n[$relatives]}" "i34X${_n[$family]}"
       fi
     fi
-    
-    [[ -n ${toswap[1]:-} ]] && {
-      swapmeet "${toswap[@]}"
-      messy "[con_id=${i3list[TWC]}]" focus
-    }
 
   else
     # trgpar is visible, if layout is tabbed just move it
