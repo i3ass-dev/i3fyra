@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.764
+i3fyra - version: 0.81
 updated: 2020-07-23 by budRich
 EOB
 }
@@ -300,7 +300,10 @@ containerhide(){
   local trg=$1
   local tfam sib mainsplit
 
-  [[ ${#trg} -gt 1 ]] && multihide "$trg" && return
+  [[ ${#trg} -gt 1 ]] && {
+    multihide "$trg"
+    return
+  }
 
   declare -i family target sibling ref1 ref2 mainsize famsize
 
@@ -371,12 +374,11 @@ containershow(){
 
   if ((target & _visible)); then
     return 0
-
-  # if if no containers are visible create layout
-  elif ((!_visible)); then
-    layoutcreate "$trg"
   
   elif ((target & _hidden)); then
+
+    # if if no containers are visible create layout
+    ((!_visible)) && layoutcreate "$trg"
 
     declare -i family sibling dest tspl tdim
     declare -i famshow size1 size2
@@ -449,7 +451,7 @@ containershow(){
         applysplits "$tmrk=$tspl"
     }
 
-    ((_visible |= target)) && ((_hiddent &= ~target))
+    ((_visible |= target)) && ((_hidden &= ~target))
 
     # bring the whole family
     ((famshow && sibling & _hidden)) && containershow "$sib"
@@ -584,20 +586,19 @@ layoutcreate(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local trg fam
+  local trg fam s1 s2
+  declare -i target f1 f2
 
   trg=$1
+  target=${_m[$trg]}
+
+  ((_isvertical)) \
+    && s1=h s2=v f1=${_m[AB]} f2=${_m[CD]} \
+    || s1=v s2=h f1=${_m[AC]} f2=${_m[BD]}
+
+  fam=${_n[$((target & f1 ? f1 : f2))]}
 
   messy workspace "${i3list[WSF]}"
-
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    [[ $trg =~ A|B ]] && fam=AB || fam=CD 
-    messy "[con_mark=i34XAC]" unmark
-  else
-    [[ $trg =~ A|C ]] && fam=AC || fam=BD
-    messy "[con_mark=i34XAB]" unmark
-  fi
-
   dummywindow dummy
   
   messy "[con_mark=dummy]" \
@@ -611,15 +612,9 @@ layoutcreate(){
   messy "[con_mark=dummy]" focus parent
   messy mark i34X${fam}, focus parent
 
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    messy "[con_mark=dummy]" layout splith, split h
-    messy "[con_mark=dummy]" kill
-    messy "[con_mark=i34XAC]" layout splitv, split v
-  else
-    messy "[con_mark=dummy]" layout default, split v
-    messy "[con_mark=dummy]" kill
-    messy "[con_mark=i34XAB]" layout splith, split h
-  fi
+  messy "[con_mark=dummy]"  layout "split${s1}", split "$s1"
+  messy "[con_mark=dummy]" kill
+  messy "[con_mark=i34XAC]" layout "split${s2}", split "$s2"
 
 }
 
@@ -642,31 +637,34 @@ multihide(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local trg real i
+  local trg arg targets i
 
-  trg="$1"
+  arg="$1"
 
-  for (( i = 0; i < ${#trg}; i++ )); do
-    [[ ${trg:$i:1} =~ [${i3list[LVI]}] ]] && real+=${trg:$i:1}
+  # only hide visible containers in arg
+  for (( i = 0; i < ${#arg}; i++ )); do
+    trg=${arg:$i:1}
+    ((_m[$trg] & _visible)) && targets+=$trg
   done
 
-  [[ -z $real ]] && return
-  [[ ${#real} -eq 1 ]] && containerhide "$real" && return
+  ((${#targets} == 0)) && return
   
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    [[ "A" =~ [$real] ]] && [[ "B" =~ [$real] ]] \
-      && real=${real/A/} real=${real/B/} && familyhide AB
-    [[ "C" =~ [$real] ]] && [[ "D" =~ [$real] ]] \
-      && real=${real/C/} real=${real/D/} && familyhide CD
+  # hide whole families if present in arg and visible
+  if ((_isvertical)); then
+    [[ $targets =~ A && $targets =~ B ]] \
+      && targets=${targets//[AB]/} && familyhide AB
+    [[ $targets =~ C && $targets =~ D ]] \
+      && targets=${targets//[CD]/} && familyhide CD
   else
-    [[ "A" =~ [$real] ]] && [[ "C" =~ [$real] ]] \
-      && real=${real/A/} real=${real/C/} && familyhide AC
-    [[ "B" =~ [$real] ]] && [[ "D" =~ [$real] ]] \
-      && real=${real/B/} real=${real/D/} && familyhide BD
+    [[ $targets =~ A && $targets =~ C ]] \
+      && targets=${targets//[AC]/} && familyhide AC
+    [[ $targets =~ B && $targets =~ D ]] \
+      && targets=${targets//[BD]/} && familyhide BD
   fi
 
-  for (( i = 0; i < ${#real}; i++ )); do
-    containerhide "${real:$i:1}"
+  # hide rest if any
+  ((${#targets})) && for ((i=0;i<${#targets};i++)); do
+    containerhide "${targets:$i:1}"
   done
 }
 
@@ -736,13 +734,9 @@ swapmeet(){
     if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
       _v+=(i3MAB "${i3list[MBD]}")
       _v+=(i3MCD "${i3list[MAC]}")
-      # i3var set i3MAB "${i3list[MBD]}"
-      # i3var set i3MCD "${i3list[MAC]}"
     else
       _v+=(i3MAC "${i3list[MBD]}")
       _v+=(i3MBD "${i3list[MAC]}")
-      # i3var set i3MAC "${i3list[MBD]}"
-      # i3var set i3MBD "${i3list[MAC]}"
     fi
   else # swap within family, rename siblings
     for (( i = 0; i < ${#i3list[AFF]}; i++ )); do
@@ -775,7 +769,7 @@ togglefloat(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}()"
   
-  local trg
+  
 
   # AWF - 1 = floating; 0 = tiled
   if ((i3list[AWF]==1)); then
@@ -786,18 +780,22 @@ togglefloat(){
       return
     fi
 
-    # AWF == 1 && make AWC tiled and move AWC to trg
-    if [[ ${i3list[CMA]} =~ [${i3list[LVI]:-}] ]]; then
-      trg="${i3list[CMA]}" 
-    elif [[ -n ${i3list[LVI]:-} ]]; then
+    local trg
+
+    declare -i main
+    main=${_m[$I3FYRA_MAIN_CONTAINER]}
+
+    if ((main & _visible)); then
+      trg=$I3FYRA_MAIN_CONTAINER
+    elif ((_visible)); then
       trg=${i3list[LVI]:0:1}
-    elif [[ -n ${i3list[LHI]:-} ]]; then
+    elif ((_hidden)); then
       trg=${i3list[LHI]:0:1}
     else
-      trg="${i3list[CMA]}"
+      trg=$I3FYRA_MAIN_CONTAINER
     fi
 
-    if [[ $trg =~ [${i3list[LEX]:-}] ]]; then
+    if (( _m[$trg] & (_visible | _hidden) )); then
       containershow "$trg"
       messy "[con_id=${i3list[AWC]}]" floating disable, \
         move to mark "i34${trg}"

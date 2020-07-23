@@ -4,20 +4,19 @@ layoutcreate(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local trg fam
+  local trg fam s1 s2
+  declare -i target f1 f2
 
   trg=$1
+  target=${_m[$trg]}
+
+  ((_isvertical)) \
+    && s1=h s2=v f1=${_m[AB]} f2=${_m[CD]} \
+    || s1=v s2=h f1=${_m[AC]} f2=${_m[BD]}
+
+  fam=${_n[$((target & f1 ? f1 : f2))]}
 
   messy workspace "${i3list[WSF]}"
-
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    [[ $trg =~ A|B ]] && fam=AB || fam=CD 
-    messy "[con_mark=i34XAC]" unmark
-  else
-    [[ $trg =~ A|C ]] && fam=AC || fam=BD
-    messy "[con_mark=i34XAB]" unmark
-  fi
-
   dummywindow dummy
   
   messy "[con_mark=dummy]" \
@@ -31,14 +30,8 @@ layoutcreate(){
   messy "[con_mark=dummy]" focus parent
   messy mark i34X${fam}, focus parent
 
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    messy "[con_mark=dummy]" layout splith, split h
-    messy "[con_mark=dummy]" kill
-    messy "[con_mark=i34XAC]" layout splitv, split v
-  else
-    messy "[con_mark=dummy]" layout default, split v
-    messy "[con_mark=dummy]" kill
-    messy "[con_mark=i34XAB]" layout splith, split h
-  fi
+  messy "[con_mark=dummy]"  layout "split${s1}", split "$s1"
+  messy "[con_mark=dummy]" kill
+  messy "[con_mark=i34XAC]" layout "split${s2}", split "$s2"
 
 }

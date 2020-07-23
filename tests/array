@@ -1,4 +1,4 @@
-i3list[AWF]=0              	# Active Window floating
+i3list[AWF]=1              	# Active Window floating
 i3list[ATW]=1920           	# Active Window tab width
 i3list[ATX]=0              	# Active Window tab x postion
 i3list[AWH]=220            	# Active Window height

@@ -4,30 +4,33 @@ multihide(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local trg real i
+  local trg arg targets i
 
-  trg="$1"
+  arg="$1"
 
-  for (( i = 0; i < ${#trg}; i++ )); do
-    [[ ${trg:$i:1} =~ [${i3list[LVI]}] ]] && real+=${trg:$i:1}
+  # only hide visible containers in arg
+  for (( i = 0; i < ${#arg}; i++ )); do
+    trg=${arg:$i:1}
+    ((_m[$trg] & _visible)) && targets+=$trg
   done
 
-  [[ -z $real ]] && return
-  [[ ${#real} -eq 1 ]] && containerhide "$real" && return
+  ((${#targets} == 0)) && return
   
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    [[ "A" =~ [$real] ]] && [[ "B" =~ [$real] ]] \
-      && real=${real/A/} real=${real/B/} && familyhide AB
-    [[ "C" =~ [$real] ]] && [[ "D" =~ [$real] ]] \
-      && real=${real/C/} real=${real/D/} && familyhide CD
+  # hide whole families if present in arg and visible
+  if ((_isvertical)); then
+    [[ $targets =~ A && $targets =~ B ]] \
+      && targets=${targets//[AB]/} && familyhide AB
+    [[ $targets =~ C && $targets =~ D ]] \
+      && targets=${targets//[CD]/} && familyhide CD
   else
-    [[ "A" =~ [$real] ]] && [[ "C" =~ [$real] ]] \
-      && real=${real/A/} real=${real/C/} && familyhide AC
-    [[ "B" =~ [$real] ]] && [[ "D" =~ [$real] ]] \
-      && real=${real/B/} real=${real/D/} && familyhide BD
+    [[ $targets =~ A && $targets =~ C ]] \
+      && targets=${targets//[AC]/} && familyhide AC
+    [[ $targets =~ B && $targets =~ D ]] \
+      && targets=${targets//[BD]/} && familyhide BD
   fi
 
-  for (( i = 0; i < ${#real}; i++ )); do
-    containerhide "${real:$i:1}"
+  # hide rest if any
+  ((${#targets})) && for ((i=0;i<${#targets};i++)); do
+    containerhide "${targets:$i:1}"
   done
 }

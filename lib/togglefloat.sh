@@ -4,7 +4,7 @@ togglefloat(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}()"
   
-  local trg
+  
 
   # AWF - 1 = floating; 0 = tiled
   if ((i3list[AWF]==1)); then
@@ -15,18 +15,22 @@ togglefloat(){
       return
     fi
 
-    # AWF == 1 && make AWC tiled and move AWC to trg
-    if [[ ${i3list[CMA]} =~ [${i3list[LVI]:-}] ]]; then
-      trg="${i3list[CMA]}" 
-    elif [[ -n ${i3list[LVI]:-} ]]; then
+    local trg
+
+    declare -i main
+    main=${_m[$I3FYRA_MAIN_CONTAINER]}
+
+    if ((main & _visible)); then
+      trg=$I3FYRA_MAIN_CONTAINER
+    elif ((_visible)); then
       trg=${i3list[LVI]:0:1}
-    elif [[ -n ${i3list[LHI]:-} ]]; then
+    elif ((_hidden)); then
       trg=${i3list[LHI]:0:1}
     else
-      trg="${i3list[CMA]}"
+      trg=$I3FYRA_MAIN_CONTAINER
     fi
 
-    if [[ $trg =~ [${i3list[LEX]:-}] ]]; then
+    if (( _m[$trg] & (_visible | _hidden) )); then
       containershow "$trg"
       messy "[con_id=${i3list[AWC]}]" floating disable, \
         move to mark "i34${trg}"

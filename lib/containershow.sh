@@ -16,12 +16,11 @@ containershow(){
 
   if ((target & _visible)); then
     return 0
-
-  # if if no containers are visible create layout
-  elif ((!_visible)); then
-    layoutcreate "$trg"
   
   elif ((target & _hidden)); then
+
+    # if if no containers are visible create layout
+    ((!_visible)) && layoutcreate "$trg"
 
     declare -i family sibling dest tspl tdim
     declare -i famshow size1 size2
@@ -94,7 +93,7 @@ containershow(){
         applysplits "$tmrk=$tspl"
     }
 
-    ((_visible |= target)) && ((_hiddent &= ~target))
+    ((_visible |= target)) && ((_hidden &= ~target))
 
     # bring the whole family
     ((famshow && sibling & _hidden)) && containershow "$sib"

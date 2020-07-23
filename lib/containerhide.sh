@@ -7,7 +7,10 @@ containerhide(){
   local trg=$1
   local tfam sib mainsplit
 
-  [[ ${#trg} -gt 1 ]] && multihide "$trg" && return
+  [[ ${#trg} -gt 1 ]] && {
+    multihide "$trg"
+    return
+  }
 
   declare -i family target sibling ref1 ref2 mainsize famsize
 
