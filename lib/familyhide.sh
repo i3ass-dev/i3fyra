@@ -14,7 +14,7 @@ familyhide(){
     target=${_m[$trg]}
 
     if ((target & _visible)); then
-      messy "[con_mark=i34${trg}]" move scratchpad
+      # messy "[con_mark=i34${trg}]" move scratchpad
 
       ((_visible &= ~target))
       ((_hidden  |= target))
@@ -22,6 +22,8 @@ familyhide(){
       famchk+=${trg}
     fi
   done
+
+  messy "[con_mark=i34X${tfam}]" move scratchpad
 
   _v+=("i34F${tfam}" "${famchk}")
   _v+=("i34MAB" "${i3list[SAB]}")
