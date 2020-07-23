@@ -20,7 +20,7 @@ while read -r ; do
         "${cmd1[@]}"
       done > /dev/null 2>&1
     )
-    :
+    cat "$_dir/main.sh" "$_dir/lib/"* | grep -E '^\s*[^#].+$' | wc -l
   }
 done < <(
   inotifywait --event close_write          \
@@ -28,5 +28,6 @@ done < <(
               --exclude 'awklib[.]sh$'     \
               "$_dir"/lib/*.sh             \
               "$_dir/main.sh"              \
+              "$_dir/watch.sh"             \
               "$_dir/manifest.md"
 )
