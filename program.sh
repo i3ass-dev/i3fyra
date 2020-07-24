@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.93
+i3fyra - version: 0.932
 updated: 2020-07-24 by budRich
 EOB
 }
@@ -30,9 +30,7 @@ main(){
   declare -g  _sizstring # combined resize i3-msg
 
   declare -gi _existing _visible _hidden
-
   declare -gi _famact # ?
-
   declare -gi _stamp
 
   ((__o[verbose])) && {
@@ -41,8 +39,8 @@ main(){
   }
 
   declare -gi _isvertical
-  declare -ga _splits       # 0=mainsplit, 1&2 families
-  declare -ga _splitdir     # 0=v|h 1=h|v
+  declare -ga _splits
+  declare -ga _splitdir
 
   if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
     _isvertical=1
@@ -63,7 +61,7 @@ main(){
     unset 'lopt[@]'
   fi
 
-  ((i3list[WSF])) && i3list[WSF]=${I3FYRA_WS:-${i3list[WSA]}}
+  : "${i3list[WSF]:=${I3FYRA_WS:-${i3list[WSA]}}}"
 
   bitwiseinit
 
@@ -86,7 +84,7 @@ main(){
       && messy "[con_id=${i3list[AWC]}]" focus
 
   else
-    ERH "no valid options"
+    ERH "no valid options $*"
 
   fi
 
@@ -262,11 +260,15 @@ bitwiseinit() {
 
 cleanup() {
 
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}()"
+
   local qflag
 
   ((__o[verbose])) || qflag='-q'
 
-  ((${#_v[@]}))   && varset "${_v[@]}"
+  ((${#_v[@]})) && varset "${_v[@]}"
+  
+  messy "[con_mark=i34GHOST]"  move scratchpad
 
   [[ -n $_msgstring ]] && i3-msg "${qflag:-}" "$_msgstring"
   [[ -n $_sizstring ]] && i3-msg "${qflag:-}" "$_sizstring"
@@ -291,15 +293,16 @@ containercreate(){
   [[ -z ${i3list[TWC]} ]] \
     && ERX "can't create container without window"
 
-  dummywindow dummy
-
-  messy "[con_mark=dummy]" split h, layout tabbed
+  messy "[con_mark=i34GHOST]"           \
+    move to workspace "${i3list[WSF]}", \
+    floating disable,                   \
+    move to mark "i34X${_splits[0]}",   \
+    split h, layout tabbed
+    
   messy "[con_id=${i3list[TWC]}]" \
-    floating disable, move to mark dummy
-  messy "[con_mark=dummy]" focus parent
-  # messy "[con_mark=dummy]" focus, focus parent
+    floating disable, move to mark i34GHOST
+  messy "[con_mark=i34GHOST]" focus, focus parent
   messy mark "i34${trg}"
-  messy "[con_mark=dummy]" kill
     
   # after creation, move cont to scratch
   messy "[con_mark=i34${trg}]" move scratchpad
@@ -443,7 +446,7 @@ containershow(){
     else
       # WSA = active workspace
       messy "[con_mark=i34${trg}]" \
-        move to workspace "${i3list[WSA]}", \
+        move to workspace "${i3list[WSF]}", \
         floating disable, move to mark "$tdest"
 
       tspl=${i3list[M${tfam}]}
@@ -523,10 +526,13 @@ familycreate(){
   theirfamily=$((_m[ABCD] & ~ourfamily))
   ourfam=${_n[$ourfamily]} theirfam=${_n[$theirfamily]}
 
-  messy "[con_mark=i34X${ourfam}]" unmark
+  # messy "[con_mark=i34X${ourfam}]" unmark
 
-  dummywindow dummy
-  messy "[con_mark=dummy]"            \
+  messy "[con_mark=i34GHOST]" \
+    move to workspace "${i3list[WSF]}"
+
+  messy "[con_mark=i34GHOST]"         \
+    floating disable,                 \
     move to mark "i34X${_splits[0]}", \
     split "${_splitdir[1]}",          \
     layout tabbed
@@ -534,10 +540,9 @@ familycreate(){
   messy "[con_mark=i34${trg}]" \
     move to workspace "${i3list[WSF]}", \
     floating disable, \
-    move to mark dummy
-  messy "[con_mark=dummy]" focus, focus parent
+    move to mark i34GHOST
+  messy "[con_mark=i34GHOST]" focus parent
   messy mark i34X${ourfam}
-  messy "[con_mark=dummy]" kill
 }
 
 familyhide(){
@@ -632,6 +637,8 @@ familyshow(){
 
 initfyra() {
 
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}()"
+
   declare -i wsid i
   declare -a splitsizes
   declare -i halfwidth=$((i3list[WAW]/2)) 
@@ -669,42 +676,10 @@ initfyra() {
     _v+=("i34M$split" "${splitsizes[$i]}")
   done
 
-}
-
-layoutcreate(){
-
-  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
-  
-  local trg fam s1 s2
-  declare -i target f1 f2
-
-  trg=$1
-  target=${_m[$trg]}
-
-  ((_isvertical)) \
-    && s1=h s2=v m=AC f1=${_m[AB]} f2=${_m[CD]} \
-    || s1=v s2=h m=AB f1=${_m[AC]} f2=${_m[BD]}
-
-  fam=${_n[$((target & f1 ? f1 : f2))]}
-
-  messy workspace "${i3list[WSF]}"
-  dummywindow dummy
-  
-  messy "[con_mark=dummy]" \
-    split v, layout tabbed
-  
-  messy "[con_mark=i34${trg}]" \
-    move to workspace "${i3list[WSA]}", \
-    floating disable, \
-    move to mark dummy
-
-  messy "[con_mark=dummy]" focus, focus parent
-  messy mark "i34X${fam}"
-  messy "[con_mark=i34X${fam}]" "split${s2}", split "$s2", focus, focus parent
-  messy mark "i34X${m}"
-  messy "[con_mark=i34X${m}]" layout "split${s1}", split "$s1"
-  messy "[con_mark=i34${trg}]" focus child
-  messy "[con_mark=dummy]" kill
+  # create persistent ghost container
+  i3-msg -q "[con_mark=i34GHOST]" kill
+  dummywindow "i34GHOST"
+  messy "[con_mark=i34GHOST]" move scratchpad
 
 }
 
