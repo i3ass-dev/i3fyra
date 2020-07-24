@@ -24,8 +24,8 @@ main(){
   }
 
   declare -gi _isvertical
-  declare -ga _splits       # 0=mainsplit, 1&2 families
-  declare -ga _splitdir     # 0=v|h 1=h|v
+  declare -ga _splits
+  declare -ga _splitdir
 
   if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
     _isvertical=1
@@ -69,7 +69,7 @@ main(){
       && messy "[con_id=${i3list[AWC]}]" focus
 
   else
-    ERH "no valid options"
+    ERH "no valid options $*"
 
   fi
 
