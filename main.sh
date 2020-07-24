@@ -15,9 +15,7 @@ main(){
   declare -g  _sizstring # combined resize i3-msg
 
   declare -gi _existing _visible _hidden
-
   declare -gi _famact # ?
-
   declare -gi _stamp
 
   ((__o[verbose])) && {

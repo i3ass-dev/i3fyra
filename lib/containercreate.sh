@@ -9,10 +9,11 @@ containercreate(){
   [[ -z ${i3list[TWC]} ]] \
     && ERX "can't create container without window"
 
-  messy "[con_mark=i34GHOST]" \
-    move to workspace "${i3list[WSF]}"
-
-  messy "[con_mark=i34GHOST]" split h, layout tabbed
+  messy "[con_mark=i34GHOST]"           \
+    move to workspace "${i3list[WSF]}", \
+    move to mark "i34X${_splits[0]}",   \
+    split h, layout tabbed
+    
   messy "[con_id=${i3list[TWC]}]" \
     floating disable, move to mark i34GHOST
   messy "[con_mark=i34GHOST]" focus parent
