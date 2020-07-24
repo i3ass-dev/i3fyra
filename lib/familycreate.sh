@@ -18,12 +18,13 @@ familycreate(){
   theirfamily=$((_m[ABCD] & ~ourfamily))
   ourfam=${_n[$ourfamily]} theirfam=${_n[$theirfamily]}
 
-  messy "[con_mark=i34X${ourfam}]" unmark
+  # messy "[con_mark=i34X${ourfam}]" unmark
 
   messy "[con_mark=i34GHOST]" \
     move to workspace "${i3list[WSF]}"
 
-  messy "[con_mark=i34GHOST]"            \
+  messy "[con_mark=i34GHOST]"         \
+    floating disable,                 \
     move to mark "i34X${_splits[0]}", \
     split "${_splitdir[1]}",          \
     layout tabbed
@@ -34,5 +35,4 @@ familycreate(){
     move to mark i34GHOST
   messy "[con_mark=i34GHOST]" focus parent
   messy mark i34X${ourfam}
-  messy "[con_mark=i34GHOST]" move scratchpad
 }

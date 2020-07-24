@@ -21,7 +21,6 @@ containercreate(){
   messy mark "i34${trg}"
     
   # after creation, move cont to scratch
-  messy "[con_mark=i34GHOST]"  move scratchpad
   messy "[con_mark=i34${trg}]" move scratchpad
 
   ((_hidden |= _m[$trg]))

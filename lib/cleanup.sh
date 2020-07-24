@@ -9,6 +9,8 @@ cleanup() {
   ((__o[verbose])) || qflag='-q'
 
   ((${#_v[@]})) && varset "${_v[@]}"
+  
+  messy "[con_mark=i34GHOST]"  move scratchpad
 
   [[ -n $_msgstring ]] && i3-msg "${qflag:-}" "$_msgstring"
   [[ -n $_sizstring ]] && i3-msg "${qflag:-}" "$_sizstring"
