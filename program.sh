@@ -3,8 +3,8 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.898
-updated: 2020-07-23 by budRich
+i3fyra - version: 0.93
+updated: 2020-07-24 by budRich
 EOB
 }
 
@@ -23,13 +23,13 @@ main(){
 
   declare -gA _m         # bitwise masks _m[A]=1
   declare -gA i3list     # globals array
+  
   declare -ga _n         # bitwise names _n[1]=A
   declare -ga _v         # "i3var"s to set
   declare -g  _msgstring # combined i3-msg
   declare -g  _sizstring # combined resize i3-msg
 
   declare -gi _existing _visible _hidden
-  declare -gi _isvertical=0
 
   declare -gi _famact # ?
 
@@ -40,8 +40,19 @@ main(){
     ERM " "
   }
 
-  [[ ${I3FYRA_ORIENTATION,,} = vertical ]] \
-    && _isvertical=1
+  declare -gi _isvertical
+  declare -ga _splits       # 0=mainsplit, 1&2 families
+  declare -ga _splitdir     # 0=v|h 1=h|v
+
+  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+    _isvertical=1
+    _splits=(AC AB CD)
+    _splitdir=(v h)
+  else
+    _isvertical=0
+    _splits=(AB AC BD)
+    _splitdir=(h v)
+  fi
 
   # evaluate the output of i3list or --array
   if [[ -n ${__o[array]} ]]; then
@@ -285,7 +296,8 @@ containercreate(){
   messy "[con_mark=dummy]" split h, layout tabbed
   messy "[con_id=${i3list[TWC]}]" \
     floating disable, move to mark dummy
-  messy "[con_mark=dummy]" focus, focus parent
+  messy "[con_mark=dummy]" focus parent
+  # messy "[con_mark=dummy]" focus, focus parent
   messy mark "i34${trg}"
   messy "[con_mark=dummy]" kill
     
@@ -381,32 +393,29 @@ containershow(){
   
   elif ((target & _hidden)); then
 
-    # if if no containers are visible create layout
-    ((!_visible)) && layoutcreate "$trg"
+    # WSF = workspace NAME of i3fyra
+    [[ -z ${i3list[WFN]} ]] && initfyra
 
     declare -i family sibling dest tspl tdim
-    declare -i famshow size1 size2
+    declare -i famshow size1 size2 swapon
 
     local tfam sib tdest tmrk mainsplit 
-    local mainfam sibgroup
+    local mainfam
 
     declare -a swap=()
 
     if ((_isvertical)); then
-      mainsplit=AC
-      mainfam=AB
-      sibgroup=BD
+      swapon=${_m[BD]}
       size1=${i3list[WFH]}
       size2=${i3list[WFW]}
-
     else
-      mainsplit=AB
-      mainfam=AC
-      sibgroup=CD
+      swapon=${_m[CD]}
       size1=${i3list[WFW]}
       size2=${i3list[WFH]}
-
     fi
+
+    mainsplit=${_splits[0]}
+    mainfam=${_splits[1]}
 
     family=$((target & _m[$mainfam] ? _m[$mainfam] 
            :( _m[ABCD] & ~_m[$mainfam] ) ))
@@ -420,14 +429,15 @@ containershow(){
     # if tdest is main container, trg is first in family
     if ((dest == _m[$mainsplit])) ; then
 
-      familycreate "$trg"
+      familyshow "$trg"
+      # familycreate "$trg"
       famshow=1
 
       tspl=${i3list[M$mainsplit]}  # stored split
-      tdim=$size1                  # workspace width
+      tdim=$size1                  # workspace width/height
       tmrk=$mainsplit
 
-      ((sibling & _m[$mainfam])) \
+      ((target & _m[$mainfam])) \
         && swap=("X$tfam" "X${i3list[LAL]/$tfam/}")
 
     else
@@ -440,7 +450,7 @@ containershow(){
       tdim=$size2     
       tmrk=$tfam
 
-      ((sibling & _m[$sibgroup])) && swap=("$trg" "$sib")
+      ((sibling & swapon)) && swap=("$trg" "$sib")
 
     fi
 
@@ -458,7 +468,7 @@ containershow(){
     ((_visible |= target)) && ((_hidden &= ~target))
 
     # bring the whole family
-    ((famshow && sibling & _hidden)) && containershow "$sib"
+    # ((famshow && sibling & _hidden)) && containershow "$sib"
 
   else
     containercreate "$trg"
@@ -514,21 +524,20 @@ familycreate(){
   ourfam=${_n[$ourfamily]} theirfam=${_n[$theirfamily]}
 
   messy "[con_mark=i34X${ourfam}]" unmark
+
   dummywindow dummy
-  messy "[con_mark=dummy]" \
-    move to mark "i34X${theirfam}", split v, layout tabbed
+  messy "[con_mark=dummy]"            \
+    move to mark "i34X${_splits[0]}", \
+    split "${_splitdir[1]}",          \
+    layout tabbed
 
   messy "[con_mark=i34${trg}]" \
-    move to workspace "${i3list[WSA]}", \
+    move to workspace "${i3list[WSF]}", \
     floating disable, \
     move to mark dummy
   messy "[con_mark=dummy]" focus, focus parent
   messy mark i34X${ourfam}
-
-  messy "[con_mark=dummy]" \
-    layout "split${split}", split "$split"
   messy "[con_mark=dummy]" kill
-  messy "[con_mark=i34X${ourfam}]" move "$dir"
 }
 
 familyhide(){
@@ -562,43 +571,27 @@ familyhide(){
 
 }
 
-# trg=$1
-# target=${_m[$trg]}
-
-# ((_isvertical)) \
-#   && split=h dir=down  f1=${_m[AB]} f2=${_m[CD]} \
-#   || split=v dir=right f1=${_m[AC]} f2=${_m[BD]}
-
-# ourfamily=$((target & f1 ? f1 : f2))
-# theirfamily=$((_m[ABCD] & ~ourfamily))
-# ourfam=${_n[$ourfamily]} theirfam=${_n[$theirfamily]}
-
-# messy "[con_mark=i34X${ourfam}]" unmark
-# dummywindow dummy
-# messy "[con_mark=dummy]" \
-#   move to mark "i34X${theirfam}", split v, layout tabbed
-
-# messy "[con_mark=i34${trg}]" \
-#   move to workspace "${i3list[WSA]}", \
-#   floating disable, \
-#   move to mark dummy
-# messy "[con_mark=dummy]" focus, focus parent
-# messy mark i34X${ourfam}
-
-# messy "[con_mark=dummy]" \
-#   layout "split${split}", split "$split"
-# messy "[con_mark=dummy]" kill
-# messy "[con_mark=i34X${ourfam}]" move "$dir"
-
 familyshow(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
 
-  local ourfam=$1 trg theirfam
+  local arg=$1 ourfam trg theirfam
 
-  declare -i i target ourfamily theirfamily
+  [[ ${ourfam:=${_splits[1]}} =~ ${arg:0:1} ]] \
+    || ourfam=${_splits[2]}
+
+  declare -i i target newfamily
+  declare -i ourfamily theirfamily firstfam
 
   ourfamily=${_m[$ourfam]}
+
+  # if our family is not in hiding it doesn't exist
+  # arg should always be a single from containershow().
+  ((ourfamily & _hidden)) || {
+    familycreate "${arg:0:1}"
+    newfamily=1
+  }
+
   theirfamily=$((_m[ABCD] & ~ourfamily))
   theirfam=${_n[$theirfamily]}
 
@@ -621,17 +614,60 @@ familyshow(){
     splits="AB=${i3list[MAB]}"
   fi
 
-  messy "[con_mark=i34X${theirfam}]" \
-    split "$split", focus, focus parent
-  messy mark i34templar
-  messy "[con_mark=i34X${ourfam}]" \
-    move to workspace "${i3list[WSA]}", \
-    floating disable, \
-    move to mark "i34templar", \
-    move "$dir"
-  messy "[con_mark=i34templar]" unmark
+  ((newfamily)) || messy "[con_mark=i34X${ourfam}]"    \
+                   move to workspace "${i3list[WSF]}", \
+                   floating disable,                   \
+                   move to mark "i34X${_splits[0]}"
+
+  # if $ourfam is the first and the otherfamily
+  # is visible swap'em
+  firstfam=${_m[${_splits[1]}]}
+  ((ourfamily == firstfam && theirfamily & _visible)) \
+    && messy "[con_mark=i34X${ourfam}]" \
+       swap container with mark "i34X${theirfam}"
 
   applysplits "$splits"
+
+}
+
+initfyra() {
+
+  declare -i wsid i
+  declare -a splitsizes
+  declare -i halfwidth=$((i3list[WAW]/2)) 
+  declare -i halfheight=$((i3list[WAH]/2))
+
+  local split
+
+  # if we aren't on i3fyra workspace, go there
+  # and do a new i3list to get the workspace id
+  ((!__o[dryrun] && i3list[WSA] != i3list[WSF])) && {
+    i3-msg -q workspace "${i3list[WSF]}"
+    eval "$(i3list)"
+    i3list[WFH]=${i3list[WAH]}
+    i3list[WFW]=${i3list[WAW]}
+  }
+  
+  wsid=${i3list[WSA]}
+  messy "[con_id=$wsid]"          \
+    mark "i34X${_splits[0]}",     \
+    split "${_splitdir[0]}",      \
+    layout "split${_splitdir[0]}"
+
+  # setup default layout size marks if not already set
+  ((_isvertical)) \
+    && splitsizes=([0]=$halfheight [1]=$halfwidth) \
+    || splitsizes=([0]=$halfwidth  [1]=$halfheight)
+    
+  splitsizes[2]=${splitsizes[1]}
+
+  for i in "${!_splits[@]}"; do
+    split=${_splits[$i]}
+    [[ -n ${i3list[M$split]} ]] && continue
+
+    i3list[M$split]=${splitsizes[$i]}
+    _v+=("i34M$split" "${splitsizes[$i]}")
+  done
 
 }
 
@@ -646,8 +682,8 @@ layoutcreate(){
   target=${_m[$trg]}
 
   ((_isvertical)) \
-    && s1=h s2=v f1=${_m[AB]} f2=${_m[CD]} \
-    || s1=v s2=h f1=${_m[AC]} f2=${_m[BD]}
+    && s1=h s2=v m=AC f1=${_m[AB]} f2=${_m[CD]} \
+    || s1=v s2=h m=AB f1=${_m[AC]} f2=${_m[BD]}
 
   fam=${_n[$((target & f1 ? f1 : f2))]}
 
@@ -662,12 +698,13 @@ layoutcreate(){
     floating disable, \
     move to mark dummy
 
-  messy "[con_mark=dummy]" focus parent
-  messy mark i34X${fam}, focus parent
-
-  messy "[con_mark=dummy]"  layout "split${s1}", split "$s1"
+  messy "[con_mark=dummy]" focus, focus parent
+  messy mark "i34X${fam}"
+  messy "[con_mark=i34X${fam}]" "split${s2}", split "$s2", focus, focus parent
+  messy mark "i34X${m}"
+  messy "[con_mark=i34X${m}]" layout "split${s1}", split "$s1"
+  messy "[con_mark=i34${trg}]" focus child
   messy "[con_mark=dummy]" kill
-  messy "[con_mark=i34XAC]" layout "split${s2}", split "$s2"
 
 }
 

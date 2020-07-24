@@ -19,19 +19,20 @@ familycreate(){
   ourfam=${_n[$ourfamily]} theirfam=${_n[$theirfamily]}
 
   messy "[con_mark=i34X${ourfam}]" unmark
-  dummywindow dummy
-  messy "[con_mark=dummy]" \
-    move to mark "i34X${theirfam}", split v, layout tabbed
+
+  messy "[con_mark=i34GHOST]" \
+    move to workspace "${i3list[WSF]}"
+
+  messy "[con_mark=i34GHOST]"            \
+    move to mark "i34X${_splits[0]}", \
+    split "${_splitdir[1]}",          \
+    layout tabbed
 
   messy "[con_mark=i34${trg}]" \
-    move to workspace "${i3list[WSA]}", \
+    move to workspace "${i3list[WSF]}", \
     floating disable, \
-    move to mark dummy
-  messy "[con_mark=dummy]" focus, focus parent
+    move to mark i34GHOST
+  messy "[con_mark=i34GHOST]" focus parent
   messy mark i34X${ourfam}
-
-  messy "[con_mark=dummy]" \
-    layout "split${split}", split "$split"
-  messy "[con_mark=dummy]" kill
-  messy "[con_mark=i34X${ourfam}]" move "$dir"
+  messy "[con_mark=i34GHOST]" move scratchpad
 }

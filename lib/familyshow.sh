@@ -1,42 +1,26 @@
 #!/bin/bash
 
-# trg=$1
-# target=${_m[$trg]}
-
-# ((_isvertical)) \
-#   && split=h dir=down  f1=${_m[AB]} f2=${_m[CD]} \
-#   || split=v dir=right f1=${_m[AC]} f2=${_m[BD]}
-
-# ourfamily=$((target & f1 ? f1 : f2))
-# theirfamily=$((_m[ABCD] & ~ourfamily))
-# ourfam=${_n[$ourfamily]} theirfam=${_n[$theirfamily]}
-
-# messy "[con_mark=i34X${ourfam}]" unmark
-# dummywindow dummy
-# messy "[con_mark=dummy]" \
-#   move to mark "i34X${theirfam}", split v, layout tabbed
-
-# messy "[con_mark=i34${trg}]" \
-#   move to workspace "${i3list[WSA]}", \
-#   floating disable, \
-#   move to mark dummy
-# messy "[con_mark=dummy]" focus, focus parent
-# messy mark i34X${ourfam}
-
-# messy "[con_mark=dummy]" \
-#   layout "split${split}", split "$split"
-# messy "[con_mark=dummy]" kill
-# messy "[con_mark=i34X${ourfam}]" move "$dir"
-
 familyshow(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
 
-  local ourfam=$1 trg theirfam
+  local arg=$1 ourfam trg theirfam
 
-  declare -i i target ourfamily theirfamily
+  [[ ${ourfam:=${_splits[1]}} =~ ${arg:0:1} ]] \
+    || ourfam=${_splits[2]}
+
+  declare -i i target newfamily
+  declare -i ourfamily theirfamily firstfam
 
   ourfamily=${_m[$ourfam]}
+
+  # if our family is not in hiding it doesn't exist
+  # arg should always be a single from containershow().
+  ((ourfamily & _hidden)) || {
+    familycreate "${arg:0:1}"
+    newfamily=1
+  }
+
   theirfamily=$((_m[ABCD] & ~ourfamily))
   theirfam=${_n[$theirfamily]}
 
@@ -59,15 +43,17 @@ familyshow(){
     splits="AB=${i3list[MAB]}"
   fi
 
-  messy "[con_mark=i34X${theirfam}]" \
-    split "$split", focus, focus parent
-  messy mark i34templar
-  messy "[con_mark=i34X${ourfam}]" \
-    move to workspace "${i3list[WSA]}", \
-    floating disable, \
-    move to mark "i34templar", \
-    move "$dir"
-  messy "[con_mark=i34templar]" unmark
+  ((newfamily)) || messy "[con_mark=i34X${ourfam}]"    \
+                   move to workspace "${i3list[WSF]}", \
+                   floating disable,                   \
+                   move to mark "i34X${_splits[0]}"
+
+  # if $ourfam is the first and the otherfamily
+  # is visible swap'em
+  firstfam=${_m[${_splits[1]}]}
+  ((ourfamily == firstfam && theirfamily & _visible)) \
+    && messy "[con_mark=i34X${ourfam}]" \
+       swap container with mark "i34X${theirfam}"
 
   applysplits "$splits"
 

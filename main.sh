@@ -8,13 +8,13 @@ main(){
 
   declare -gA _m         # bitwise masks _m[A]=1
   declare -gA i3list     # globals array
+  
   declare -ga _n         # bitwise names _n[1]=A
   declare -ga _v         # "i3var"s to set
   declare -g  _msgstring # combined i3-msg
   declare -g  _sizstring # combined resize i3-msg
 
   declare -gi _existing _visible _hidden
-  declare -gi _isvertical=0
 
   declare -gi _famact # ?
 
@@ -25,8 +25,19 @@ main(){
     ERM " "
   }
 
-  [[ ${I3FYRA_ORIENTATION,,} = vertical ]] \
-    && _isvertical=1
+  declare -gi _isvertical
+  declare -ga _splits       # 0=mainsplit, 1&2 families
+  declare -ga _splitdir     # 0=v|h 1=h|v
+
+  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+    _isvertical=1
+    _splits=(AC AB CD)
+    _splitdir=(v h)
+  else
+    _isvertical=0
+    _splits=(AB AC BD)
+    _splitdir=(h v)
+  fi
 
   # evaluate the output of i3list or --array
   if [[ -n ${__o[array]} ]]; then
@@ -37,7 +48,7 @@ main(){
     unset 'lopt[@]'
   fi
 
-  ((i3list[WSF])) && i3list[WSF]=${I3FYRA_WS:-${i3list[WSA]}}
+  : "${i3list[WSF]:=${I3FYRA_WS:-${i3list[WSA]}}}"
 
   bitwiseinit
 

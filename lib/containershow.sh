@@ -19,37 +19,29 @@ containershow(){
   
   elif ((target & _hidden)); then
 
-    ERM "TTT $trg is hidden"
-    sleep 2
-    # if if no containers are visible create layout
-    ((!_visible)) && layoutcreate "$trg"
-
-    ERM "TTT layout creation done continue to show"
-    sleep 2
+    # WSF = workspace NAME of i3fyra
+    [[ -z ${i3list[WFN]} ]] && initfyra
 
     declare -i family sibling dest tspl tdim
-    declare -i famshow size1 size2
+    declare -i famshow size1 size2 swapon
 
     local tfam sib tdest tmrk mainsplit 
-    local mainfam sibgroup
+    local mainfam
 
     declare -a swap=()
 
     if ((_isvertical)); then
-      mainsplit=AC
-      mainfam=AB
-      sibgroup=BD
+      swapon=${_m[BD]}
       size1=${i3list[WFH]}
       size2=${i3list[WFW]}
-
     else
-      mainsplit=AB
-      mainfam=AC
-      sibgroup=CD
+      swapon=${_m[CD]}
       size1=${i3list[WFW]}
       size2=${i3list[WFH]}
-
     fi
+
+    mainsplit=${_splits[0]}
+    mainfam=${_splits[1]}
 
     family=$((target & _m[$mainfam] ? _m[$mainfam] 
            :( _m[ABCD] & ~_m[$mainfam] ) ))
@@ -63,14 +55,15 @@ containershow(){
     # if tdest is main container, trg is first in family
     if ((dest == _m[$mainsplit])) ; then
 
-      familycreate "$trg"
+      familyshow "$trg"
+      # familycreate "$trg"
       famshow=1
 
       tspl=${i3list[M$mainsplit]}  # stored split
-      tdim=$size1                  # workspace width
+      tdim=$size1                  # workspace width/height
       tmrk=$mainsplit
 
-      ((sibling & _m[$mainfam])) \
+      ((target & _m[$mainfam])) \
         && swap=("X$tfam" "X${i3list[LAL]/$tfam/}")
 
     else
@@ -83,7 +76,7 @@ containershow(){
       tdim=$size2     
       tmrk=$tfam
 
-      ((sibling & _m[$sibgroup])) && swap=("$trg" "$sib")
+      ((sibling & swapon)) && swap=("$trg" "$sib")
 
     fi
 
@@ -101,7 +94,7 @@ containershow(){
     ((_visible |= target)) && ((_hidden &= ~target))
 
     # bring the whole family
-    ((famshow && sibling & _hidden)) && containershow "$sib"
+    # ((famshow && sibling & _hidden)) && containershow "$sib"
 
   else
     containercreate "$trg"
