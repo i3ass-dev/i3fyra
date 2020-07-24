@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.932
+i3fyra - version: 0.935
 updated: 2020-07-24 by budRich
 EOB
 }

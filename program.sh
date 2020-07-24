@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.932
+i3fyra - version: 0.935
 updated: 2020-07-24 by budRich
 EOB
 }
@@ -277,6 +277,7 @@ cleanup() {
     _=${_n[1]}
     _=$_isvertical
     _=$_existing
+    _=$famshow
     local delta=$(( ($(date +%s%N)-_stamp) /1000 ))
     local time=$(((delta / 1000) % 1000))
     ERM  $'\n'"${time}ms"
@@ -429,6 +430,10 @@ containershow(){
     sib=${_n[$sibling]}
     tdest=i34X${_n[$dest]}
 
+    # remove target from hidden here otherwise
+    # familycreation gets borked up
+    ((_hidden &= ~target))
+
     # if tdest is main container, trg is first in family
     if ((dest == _m[$mainsplit])) ; then
 
@@ -468,7 +473,7 @@ containershow(){
         applysplits "$tmrk=$tspl"
     }
 
-    ((_visible |= target)) && ((_hidden &= ~target))
+    ((_visible |= target))
 
     # bring the whole family
     # ((famshow && sibling & _hidden)) && containershow "$sib"
@@ -589,10 +594,14 @@ familyshow(){
   declare -i ourfamily theirfamily firstfam
 
   ourfamily=${_m[$ourfam]}
+  ERM "$(
+    tobin "$_hidden" ;
+    echo "${i3list[LHI]}")"
 
-  # if our family is not in hiding it doesn't exist
-  # arg should always be a single from containershow().
-  ((ourfamily & _hidden)) || {
+  # our family doesn't exist
+  # familycreate expects single char arg
+  # where arg is an already created container
+  [[ -z ${i3list[X$ourfam]} ]] && {
     familycreate "${arg:0:1}"
     newfamily=1
   }
