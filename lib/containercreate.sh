@@ -11,6 +11,7 @@ containercreate(){
 
   messy "[con_mark=i34GHOST]"           \
     move to workspace "${i3list[WSF]}", \
+    floating disable,                   \
     move to mark "i34X${_splits[0]}",   \
     split h, layout tabbed
     
