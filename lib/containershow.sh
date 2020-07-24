@@ -19,8 +19,13 @@ containershow(){
   
   elif ((target & _hidden)); then
 
+    ERM "TTT $trg is hidden"
+    sleep 2
     # if if no containers are visible create layout
     ((!_visible)) && layoutcreate "$trg"
+
+    ERM "TTT layout creation done continue to show"
+    sleep 2
 
     declare -i family sibling dest tspl tdim
     declare -i famshow size1 size2

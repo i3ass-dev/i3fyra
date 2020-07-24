@@ -11,8 +11,8 @@ layoutcreate(){
   target=${_m[$trg]}
 
   ((_isvertical)) \
-    && s1=h s2=v f1=${_m[AB]} f2=${_m[CD]} \
-    || s1=v s2=h f1=${_m[AC]} f2=${_m[BD]}
+    && s1=h s2=v m=AC f1=${_m[AB]} f2=${_m[CD]} \
+    || s1=v s2=h m=AB f1=${_m[AC]} f2=${_m[BD]}
 
   fam=${_n[$((target & f1 ? f1 : f2))]}
 
@@ -27,11 +27,12 @@ layoutcreate(){
     floating disable, \
     move to mark dummy
 
-  messy "[con_mark=dummy]" focus parent
-  messy mark i34X${fam}, focus parent
-
-  messy "[con_mark=dummy]"  layout "split${s1}", split "$s1"
+  messy "[con_mark=dummy]" focus, focus parent
+  messy mark "i34X${fam}"
+  messy "[con_mark=i34X${fam}]" "split${s2}", split "$s2", focus, focus parent
+  messy mark "i34X${m}"
+  messy "[con_mark=i34X${m}]" layout "split${s1}", split "$s1"
+  messy "[con_mark=i34${trg}]" focus child
   messy "[con_mark=dummy]" kill
-  messy "[con_mark=i34XAC]" layout "split${s2}", split "$s2"
 
 }

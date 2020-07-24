@@ -14,7 +14,8 @@ containercreate(){
   messy "[con_mark=dummy]" split h, layout tabbed
   messy "[con_id=${i3list[TWC]}]" \
     floating disable, move to mark dummy
-  messy "[con_mark=dummy]" focus, focus parent
+  messy "[con_mark=dummy]" focus parent
+  # messy "[con_mark=dummy]" focus, focus parent
   messy mark "i34${trg}"
   messy "[con_mark=dummy]" kill
     
