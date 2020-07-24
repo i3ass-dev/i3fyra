@@ -69,7 +69,7 @@ containershow(){
     else
       # WSA = active workspace
       messy "[con_mark=i34${trg}]" \
-        move to workspace "${i3list[WSA]}", \
+        move to workspace "${i3list[WSF]}", \
         floating disable, move to mark "$tdest"
 
       tspl=${i3list[M${tfam}]}

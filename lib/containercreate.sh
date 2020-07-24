@@ -16,7 +16,7 @@ containercreate(){
     
   messy "[con_id=${i3list[TWC]}]" \
     floating disable, move to mark i34GHOST
-  messy "[con_mark=i34GHOST]" focus parent
+  messy "[con_mark=i34GHOST]" focus, focus parent
   messy mark "i34${trg}"
     
   # after creation, move cont to scratch
