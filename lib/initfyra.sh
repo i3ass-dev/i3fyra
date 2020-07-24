@@ -20,7 +20,7 @@ initfyra() {
     i3list[WFW]=${i3list[WAW]}
   }
   
-  wsid=${i3list[WSA]}
+  wsid=${i3list[WAI]}
   messy "[con_id=$wsid]"          \
     mark "i34X${_splits[0]}",     \
     split "${_splitdir[0]}",      \

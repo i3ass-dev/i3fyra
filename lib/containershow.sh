@@ -19,8 +19,8 @@ containershow(){
   
   elif ((target & _hidden)); then
 
-    # WSF = workspace NAME of i3fyra
-    [[ -z ${i3list[WFN]} ]] && initfyra
+    # mainsplit is not created
+    [[ -z ${i3list[X${_splits[0]}]} ]] && initfyra
 
     declare -i family sibling dest tspl tdim
     declare -i famshow size1 size2 swapon
