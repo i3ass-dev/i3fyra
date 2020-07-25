@@ -9,7 +9,7 @@ cleanup() {
   ((__o[verbose])) || qflag='-q'
 
   ((${#_v[@]})) && varset "${_v[@]}"
-
+  # 2>&1 >/dev/null | head -n -3
   [[ -n $_msgstring ]] && i3-msg "${qflag:-}" "$_msgstring"
   [[ -n $_sizstring ]] && i3-msg "${qflag:-}" "$_sizstring"
 

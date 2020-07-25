@@ -5,7 +5,7 @@ containercreate(){
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
 
   local trg=$1 local 
-  local ghost="i34GHOST$trg"
+  local ghost="i34${trg}GHOST"
 
   [[ -z ${i3list[TWC]} ]] \
     && ERX "can't create container without window"
