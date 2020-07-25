@@ -4,7 +4,7 @@ familycreate(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local trg ourfam theirfam split dir
+  local trg ourfam theirfam split dir ghost
   declare -i target ourfamily  theirfamily f1 f2
 
   trg=$1
@@ -18,13 +18,12 @@ familycreate(){
   theirfamily=$((_m[ABCD] & ~ourfamily))
   ourfam=${_n[$ourfamily]} theirfam=${_n[$theirfamily]}
 
+  ghost="i34GHOST$ourfam"
+
   # messy "[con_mark=i34X${ourfam}]" unmark
 
-  messy "[con_mark=i34GHOST]" \
-    move to workspace "${i3list[WSF]}"
-
-  messy "[con_mark=i34GHOST]"         \
-    floating disable,                 \
+  dummwindow "$ghost"
+  messy "[con_mark=$ghost]"           \
     move to mark "i34X${_splits[0]}", \
     split "${_splitdir[1]}",          \
     layout tabbed
@@ -32,8 +31,8 @@ familycreate(){
   messy "[con_mark=i34${trg}]" \
     move to workspace "${i3list[WSF]}", \
     floating disable, \
-    move to mark i34GHOST
-  messy "[con_mark=i34GHOST]" focus, focus parent
+    move to mark $ghost
+  messy "[con_mark=$ghost]" focus, focus parent
   messy mark i34X${ourfam}
-  messy "[con_mark=i34GHOST]" floating disable, move scratchpad
+  messy "[con_mark=$ghost]" kill
 }

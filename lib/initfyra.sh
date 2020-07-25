@@ -41,9 +41,4 @@ initfyra() {
     _v+=("i34M$split" "${splitsizes[$i]}")
   done
 
-  # create persistent ghost container
-  i3-msg -q "[con_mark=i34GHOST]" kill
-  dummywindow "i34GHOST"
-  messy "[con_mark=i34GHOST]" move scratchpad
-
 }
