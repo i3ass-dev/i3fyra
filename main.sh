@@ -22,6 +22,9 @@ main(){
   declare -A i3list # globals array
   eval "$(i3list ${__o[target]:-})"
 
+  i3-msg "[con_mark=${i3list[WAI]}] mark i34XAB"
+  eval "$(i3list ${__o[target]:-})"
+
   [[ -z ${i3list[WSF]} ]] \
     && i3list[WSF]=${I3FYRA_WS:-${i3list[WSA]}}
 
