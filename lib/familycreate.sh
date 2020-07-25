@@ -33,6 +33,7 @@ familycreate(){
     move to workspace "${i3list[WSF]}", \
     floating disable, \
     move to mark i34GHOST
-  messy "[con_mark=i34GHOST]" focus parent
+  messy "[con_mark=i34GHOST]" focus, focus parent
   messy mark i34X${ourfam}
+  messy "[con_mark=i34GHOST]" floating disable, move scratchpad
 }
