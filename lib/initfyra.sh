@@ -4,11 +4,7 @@ initfyra() {
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}()"
 
-  declare -i wsid i
-  declare -a splitsizes
-  declare -i halfwidth=$((i3list[WAW]/2)) 
-  declare -i halfheight=$((i3list[WAH]/2))
-
+  declare -i wsid
   local split
 
   # if we aren't on i3fyra workspace, go there
@@ -21,24 +17,20 @@ initfyra() {
   }
   
   wsid=${i3list[WAI]}
-  messy "[con_id=$wsid]"          \
-    mark "i34X${_splits[0]}",     \
-    split "${_splitdir[0]}",      \
-    layout "split${_splitdir[0]}"
+  messy "[con_id=$wsid]"           \
+    mark "i34X${ori[main]}",       \
+    split "${ori[charmain]}",      \
+    layout "split${ori[charmain]}"
 
-  # setup default layout size marks if not already set
-  ((_isvertical)) \
-    && splitsizes=([0]=$halfheight [1]=$halfwidth) \
-    || splitsizes=([0]=$halfwidth  [1]=$halfheight)
-    
-  splitsizes[2]=${splitsizes[1]}
-
-  for i in "${!_splits[@]}"; do
-    split=${_splits[$i]}
-    [[ -n ${i3list[M$split]} ]] && continue
-
-    i3list[M$split]=${splitsizes[$i]}
-    _v+=("i34M$split" "${splitsizes[$i]}")
+  for split in ${ori[fam1]} ${ori[fam2]} ${ori[main]}; do
+    [[ -n ${i3list[M${split}]} ]] && continue
+    [[ $split = "${ori[main]}" ]] \
+      && size=${ori[sizemainhalf]} \
+      || size=${ori[sizefamhalf]}
+    i3list[M${split}]=$size
+    _v["i34M$split"]=$size
   done
 
+  _v["i34F${ori[fam1]}"]=X
+  _v["i34F${ori[fam2]}"]=X
 }

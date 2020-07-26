@@ -4,36 +4,29 @@ applysplits(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local i tsn dir mrk
-  declare -i tsv par parw parh
-
-  # i3list[WF-W/H] - i3fyra workspace W/H
-  # i3list[WA-W/H] - active workspace W/H
-  parw=${i3list[WFW]:-"${i3list[WAW]}"}
-  parh=${i3list[WFH]:-"${i3list[WAH]}"}
+  local i tsn dir trg
+  declare -i tsv
 
   for i in ${1}; do
     tsn=${i%=*} # target name of split
     tsv=${i#*=} # target value of split
 
-    if ((_isvertical)); then
-      [[ $tsn = AC ]] \
-        && par=$parh dir=height mrk=i34XAB \
-        || par=$parw dir=width  mrk=i34${tsn:0:1}
-    else
-      [[ $tsn = AB ]] \
-        && par=$parw dir=width  mrk=i34XAC \
-        || par=$parh dir=height mrk=i34${tsn:0:1}
-    fi
+    [[ $tsn = "${ori[main]}" ]] \
+      && trg="X${ori[fam1]}" dir=${ori[resizemain]} \
+      || trg=${tsn:0:1}      dir=${ori[resizefam]}
 
-    ((tsv<0)) && tsv=$((par-(tsv*-1)))
+    ((tsv<0)) && tsv=$((ori[sizemain]-(tsv*-1)))
 
-    messy "[con_mark=${mrk}]" resize set "$dir" "$tsv" px
+    # i3list[XAC | XAB] has value of the workspace they are at
+    ((i3list[$trg] == i3list[WSF] || _m[$trg] & _visible)) && {
+      # i3list[Sxx] = current/actual split xx
+      i3list[S${tsn}]=${tsv}
+      messy "[con_mark=i34$trg]" resize set "$dir" "$tsv" px
+    }
 
-    # i3list[Sxx] = current/actual split xx
     # i3list[Mxx] = last/stored    split xx
-    i3list[S${tsn}]=${tsv}
-    _v+=("i34M${tsn}" "${tsv}")
+    # store split even if its not visible
+    _v["i34M${tsn}"]=$tsv
 
   done
 }

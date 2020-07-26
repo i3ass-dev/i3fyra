@@ -2,15 +2,14 @@
 
 varset() {
 
-  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}(${_v[*]})"
 
   local key val json re mark
 
   json=$(i3-msg -t get_marks)
 
-  while [[ -n $1 ]]; do
-    key=$1 val=$2
-    shift 2
+  for key in "${!_v[@]}"; do
+    val=${_v[$key]}
     re="\"(${key}=[^\"]+)\""
     [[ $json =~ $re ]] && mark="${BASH_REMATCH[1]}"
 

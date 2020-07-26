@@ -2,15 +2,14 @@
 
 messy() {
 
+  # arguments are valid i3-msg arguments
+  # separate resize commands and execute
+  # all commands at once in cleanup()
   (( __o[verbose] )) && ERM "m $*"
-
   (( __o[dryrun]  )) || {
-    if [[ $* =~ resize ]]; then
-      _sizstring+="$*;"
-    else
-      _msgstring+="$*;"
-    fi
+    [[ $* =~ resize ]] \
+      && _sizstring+="$*;" \
+      || _msgstring+="$*;"
   }
-
-  # i3-msg -q "$*"
+  
 }

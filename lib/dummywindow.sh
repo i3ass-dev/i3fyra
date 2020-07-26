@@ -8,12 +8,6 @@ dummywindow() {
   
   mark=${1:?first argument not a mark name}
 
-  if ((__o[dryrun])); then
-    id=777
-  else
-    id="$(i3-msg open)"
-    id="${id//[^0-9]/}"
-  fi
-
-  messy "[con_id=$id]" floating disable, mark "$mark"
+  ((__o[dryrun])) && id=777 || id="$(i3-msg open)"
+  messy "[con_id=${id//[^0-9]/}]" floating disable, mark "$mark"
 }

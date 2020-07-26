@@ -3,8 +3,8 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.935
-updated: 2020-07-24 by budRich
+i3fyra - version: 0.944
+updated: 2020-07-26 by budRich
 EOB
 }
 
@@ -19,50 +19,42 @@ main(){
 
   __o[verbose]=1
 
+  ((__o[verbose])) && {
+    declare -gi _stamp
+    _stamp=$(date +%s%N)
+    ERM "---i3fyra start---"
+  }
+
   trap 'cleanup' EXIT
 
-  declare -gA _m         # bitwise masks _m[A]=1
-  declare -gA i3list     # globals array
-  
-  declare -ga _n         # bitwise names _n[1]=A
-  declare -ga _v         # "i3var"s to set
+  declare -gA _v         # "i3var"s to set
   declare -g  _msgstring # combined i3-msg
   declare -g  _sizstring # combined resize i3-msg
 
-  declare -gi _existing _visible _hidden
+  declare -gi _visible _hidden
   declare -gi _famact # ?
-  declare -gi _stamp
-
-  ((__o[verbose])) && {
-    _stamp=$(date +%s%N)
-    ERM " "
-  }
-
-  declare -gi _isvertical
-  declare -ga _splits
-  declare -ga _splitdir
-
-  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
-    _isvertical=1
-    _splits=(AC AB CD)
-    _splitdir=(v h)
-  else
-    _isvertical=0
-    _splits=(AB AC BD)
-    _splitdir=(h v)
-  fi
 
   # evaluate the output of i3list or --array
-  if [[ -n ${__o[array]} ]]; then
-    eval "${__o[array]}"
-  else
+  declare -g  _array
+  declare -gA i3list
+
+  [[ -z ${_array:=${__o[array]}} ]] && {
     mapfile -td $'\n\s' lopt <<< "${__o[target]:-}"
-    eval "$(i3list "${lopt[@]}")"
+    _array=$(i3list "${lopt[@]}")
     unset 'lopt[@]'
-  fi
+  }
+
+  eval "$_array"
 
   : "${i3list[WSF]:=${I3FYRA_WS:-${i3list[WSA]}}}"
 
+  # ori - common values dependent on I3FYRA_ORIENTATION
+  declare -gA ori 
+  orientationinit
+
+  # create bitmasks
+  declare -gA _m  # bitwise masks (_m[A]=1)
+  declare -ga _n  # bitwise names (_n[1]=A)
   bitwiseinit
 
   if [[ -n ${__o[show]} ]]; then
@@ -197,36 +189,29 @@ applysplits(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local i tsn dir mrk
-  declare -i tsv par parw parh
-
-  # i3list[WF-W/H] - i3fyra workspace W/H
-  # i3list[WA-W/H] - active workspace W/H
-  parw=${i3list[WFW]:-"${i3list[WAW]}"}
-  parh=${i3list[WFH]:-"${i3list[WAH]}"}
+  local i tsn dir trg
+  declare -i tsv
 
   for i in ${1}; do
     tsn=${i%=*} # target name of split
     tsv=${i#*=} # target value of split
 
-    if ((_isvertical)); then
-      [[ $tsn = AC ]] \
-        && par=$parh dir=height mrk=i34XAB \
-        || par=$parw dir=width  mrk=i34${tsn:0:1}
-    else
-      [[ $tsn = AB ]] \
-        && par=$parw dir=width  mrk=i34XAC \
-        || par=$parh dir=height mrk=i34${tsn:0:1}
-    fi
+    [[ $tsn = "${ori[main]}" ]] \
+      && trg="X${ori[fam1]}" dir=${ori[resizemain]} \
+      || trg=${tsn:0:1}      dir=${ori[resizefam]}
 
-    ((tsv<0)) && tsv=$((par-(tsv*-1)))
+    ((tsv<0)) && tsv=$((ori[sizemain]-(tsv*-1)))
 
-    messy "[con_mark=${mrk}]" resize set "$dir" "$tsv" px
+    # i3list[XAC | XAB] has value of the workspace they are at
+    ((i3list[$trg] == i3list[WSF] || _m[$trg] & _visible)) && {
+      # i3list[Sxx] = current/actual split xx
+      i3list[S${tsn}]=${tsv}
+      messy "[con_mark=i34$trg]" resize set "$dir" "$tsv" px
+    }
 
-    # i3list[Sxx] = current/actual split xx
     # i3list[Mxx] = last/stored    split xx
-    i3list[S${tsn}]=${tsv}
-    _v+=("i34M${tsn}" "${tsv}")
+    # store split even if its not visible
+    _v["i34M${tsn}"]=$tsv
 
   done
 }
@@ -254,8 +239,6 @@ bitwiseinit() {
     [[ ${i3list[LHI]} =~ $k ]] && ((_hidden |= _m[$k]))
     [[ ${i3list[LVI]} =~ $k ]] && ((_visible|= _m[$k]))
   done
-
-  _existing=$((_hidden | _visible))
 }
 
 cleanup() {
@@ -266,18 +249,15 @@ cleanup() {
 
   ((__o[verbose])) || qflag='-q'
 
-  ((${#_v[@]})) && varset "${_v[@]}"
-  
-  messy "[con_mark=i34GHOST]"  move scratchpad
-
+  ((${#_v[@]})) && varset
+  # 2>&1 >/dev/null | head -n -3
   [[ -n $_msgstring ]] && i3-msg "${qflag:-}" "$_msgstring"
   [[ -n $_sizstring ]] && i3-msg "${qflag:-}" "$_sizstring"
 
   ((__o[verbose])) && {
-    _=${_n[1]}
-    _=$_isvertical
-    _=$_existing
-    _=$famshow
+    # _=${_n[1]}
+    # _=$_isvertical
+    # _=$_existing
     local delta=$(( ($(date +%s%N)-_stamp) /1000 ))
     local time=$(((delta / 1000) % 1000))
     ERM  $'\n'"${time}ms"
@@ -289,27 +269,33 @@ containercreate(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
 
-  local trg=$1
+  local trg=$1 
+  local ghost="i34${trg}GHOST"
+
+  # mainsplit is not created
+  [[ -z ${i3list[X${ori[main]}]} ]] && initfyra
 
   [[ -z ${i3list[TWC]} ]] \
     && ERX "can't create container without window"
 
-  messy "[con_mark=i34GHOST]"           \
-    move to workspace "${i3list[WSF]}", \
-    floating disable,                   \
-    move to mark "i34X${_splits[0]}",   \
-    split h, layout tabbed
+  dummywindow "$ghost"
+
+  messy "[con_mark=$ghost]"            \
+    move to mark "i34X${ori[main]}",   \
+    split "${ori[charmain]}", layout tabbed
     
   messy "[con_id=${i3list[TWC]}]" \
-    floating disable, move to mark i34GHOST
-  messy "[con_mark=i34GHOST]" focus, focus parent
+    floating disable, move to mark "$ghost"
+  messy "[con_mark=$ghost]" focus, focus parent
   messy mark "i34${trg}"
     
   # after creation, move cont to scratch
-  messy "[con_mark=i34${trg}]" move scratchpad
+  messy "[con_mark=$ghost]" kill
 
+  # run container show to show container to place
+  # container in correct family, set _hidden
+  # to trigger that functionality
   ((_hidden |= _m[$trg]))
-  # run container show to show container
   containershow "$trg"
 }
 
@@ -318,61 +304,45 @@ containerhide(){
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
   local trg=$1
-  local tfam sib mainsplit
+  local tfam sib main
 
   [[ ${#trg} -gt 1 ]] && {
     multihide "$trg"
     return
   }
 
-  declare -i family target sibling ref1 ref2 mainsize famsize
+  declare -i target sibling splitmain splitfam
+
+  main=${ori[main]}
+  splitmain=${i3list[S$main]}
+  splitfam=${i3list[S$tfam]}
+
+  [[ ${tfam:=${ori[fam1]}} =~ $trg ]] || tfam=${ori[fam2]}
 
   target=${_m[$trg]}
-
-  if ((_isvertical)); then
-    mainsplit=AC
-    ref1=${i3list[WFH]}
-    ref2=${i3list[WFW]}
-    family=$((target & _m[AB]?_m[AB]:_m[CD]))
-  else
-    mainsplit=AB
-    ref1=${i3list[WFW]}
-    ref2=${i3list[WFH]}
-    family=$((target & _m[AC]?_m[AC]:_m[BD]))
-  fi
-
-  tfam=${_n[$family]}
-  mainsize=${i3list[S$mainsplit]}
-  famsize=${i3list[S$tfam]}
-
-  sibling=$((family & ~target))
+  sibling=$((_m[$tfam] & ~target))
   sib=${_n[$sibling]}
 
   messy "[con_mark=i34${trg}]" move scratchpad
-
-  # add to trg to hid
-  i3list[LHI]+=$trg
-  i3list[LVI]=${i3list[LVI]/$trg/}
-  i3list[LVI]=${i3list[LVI]:-X}
 
   ((_visible &= ~target))
   ((_hidden  |= target))
 
   # if trg is last of it's fam, note it.
   # else focus sib
-  ((! (sibling & _visible) ))       \
-    && _v+=("i34F${tfam}" "$trg") \
+  ((! (sibling & _visible) ))  \
+    && _v["i34F${tfam}"]=$trg  \
     || i3list[SIBFOC]=$sib
 
   # note splits
-  ((mainsize && mainsize!=ref1)) && {
-    _v+=("i34M${mainsplit}" "$mainsize")
-    i3list[M${mainsplit}]=$mainsize
+  ((splitmain && splitmain!=ori[sizemain])) && {
+    _v["i34M${main}"]=$splitmain
+    i3list[M${main}]=$splitmain
   }
 
-  ((famsize && famsize!=ref2)) && {
-    _v+=("i34M${tfam}" "$famsize")
-    i3list[M${tfam}]=$famsize
+  ((splitfam && splitfam!=ori[sizefam])) && {
+    _v["i34M${tfam}"]=$splitfam
+    i3list[M${tfam}]=$splitfam
   }
 }
 
@@ -386,9 +356,7 @@ containershow(){
   # if it already is visible, do nothing.
   # if it doesn't exist, create it 
   local trg=$1
-
-  declare -i target
-  target=${_m[$trg]}
+  declare -i target=${_m[$trg]}
 
   ((target & _m[ABCD])) || ERX "$trg not valid container"
 
@@ -397,56 +365,27 @@ containershow(){
   
   elif ((target & _hidden)); then
 
-    # WSF = workspace NAME of i3fyra
-    [[ -z ${i3list[WFN]} ]] && initfyra
+    declare -i family sibling dest tspl tdim swapon
+    local tfam sib tdest tmrk main 
 
-    declare -i family sibling dest tspl tdim
-    declare -i famshow size1 size2 swapon
+    main=${ori[main]}
+    [[ ${tfam:=${ori[fam1]}} =~ $trg ]] || tfam=${ori[fam2]}
 
-    local tfam sib tdest tmrk mainsplit 
-    local mainfam
-
-    declare -a swap=()
-
-    if ((_isvertical)); then
-      swapon=${_m[BD]}
-      size1=${i3list[WFH]}
-      size2=${i3list[WFW]}
-    else
-      swapon=${_m[CD]}
-      size1=${i3list[WFW]}
-      size2=${i3list[WFH]}
-    fi
-
-    mainsplit=${_splits[0]}
-    mainfam=${_splits[1]}
-
-    family=$((target & _m[$mainfam] ? _m[$mainfam] 
-           :( _m[ABCD] & ~_m[$mainfam] ) ))
-
+    family=${_m[$tfam]}
     sibling=$((family & ~target))
-    dest=$((sibling & _visible ? family : _m[$mainsplit]))
-    tfam=${_n[$family]}
+    dest=$((sibling & _visible ? family : _m[$main]))
     sib=${_n[$sibling]}
     tdest=i34X${_n[$dest]}
+
+    swapon=$((_m[ABCD] & ~_m[$main]))
 
     # remove target from hidden here otherwise
     # familycreation gets borked up
     ((_hidden &= ~target))
 
-    # if tdest is main container, trg is first in family
-    if ((dest == _m[$mainsplit])) ; then
+    if ((dest == _m[$main])) ; then
 
       familyshow "$trg"
-      # familycreate "$trg"
-      famshow=1
-
-      tspl=${i3list[M$mainsplit]}  # stored split
-      tdim=$size1                  # workspace width/height
-      tmrk=$mainsplit
-
-      ((target & _m[$mainfam])) \
-        && swap=("X$tfam" "X${i3list[LAL]/$tfam/}")
 
     else
       # WSA = active workspace
@@ -455,28 +394,22 @@ containershow(){
         floating disable, move to mark "$tdest"
 
       tspl=${i3list[M${tfam}]}
-      tdim=$size2     
+      tdim=${ori[sizefam]}     
       tmrk=$tfam
 
-      ((sibling & swapon)) && swap=("$trg" "$sib")
+      ((sibling & swapon)) && {
+        messy "[con_mark=i34$trg]" \
+          swap container with mark "i34$sib"
+      }
+
+      ((tspl && (tdim==tspl || !_famact) )) && {
+          i3list[S${tmrk}]=$((tdim/2))
+          applysplits "$tmrk=$tspl"
+      }
 
     fi
 
-    ((${#swap[@]})) && {
-      messy "[con_mark=i34${swap[0]}]" \
-        swap container with mark "i34${swap[1]}"
-    }
-
-    ((tspl)) \
-      && ((tdim==size2 || !_famact)) && {
-        i3list[S${tmrk}]=$((tdim/2))
-        applysplits "$tmrk=$tspl"
-    }
-
     ((_visible |= target))
-
-    # bring the whole family
-    # ((famshow && sibling & _hidden)) && containershow "$sib"
 
   else
     containercreate "$trg"
@@ -491,14 +424,8 @@ dummywindow() {
   
   mark=${1:?first argument not a mark name}
 
-  if ((__o[dryrun])); then
-    id=777
-  else
-    id="$(i3-msg open)"
-    id="${id//[^0-9]/}"
-  fi
-
-  messy "[con_id=$id]" floating disable, mark "$mark"
+  ((__o[dryrun])) && id=777 || id="$(i3-msg open)"
+  messy "[con_id=${id//[^0-9]/}]" floating disable, mark "$mark"
 }
 
 set -E
@@ -517,37 +444,38 @@ familycreate(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local trg ourfam theirfam split dir
-  declare -i target ourfamily  theirfamily f1 f2
+  local trg=$1 tfam ghost
+  declare -i target=${_m[$trg]}
 
-  trg=$1
-  target=${_m[$trg]}
+  [[ ${tfam:=${ori[fam1]}} =~ $trg ]] || tfam=${ori[fam2]}
 
-  ((_isvertical)) \
-    && split=h dir=down  f1=${_m[AB]} f2=${_m[CD]} \
-    || split=v dir=right f1=${_m[AC]} f2=${_m[BD]}
+  ghost="i34${tfam}GHOST"
 
-  ourfamily=$((target & f1 ? f1 : f2))
-  theirfamily=$((_m[ABCD] & ~ourfamily))
-  ourfam=${_n[$ourfamily]} theirfam=${_n[$theirfamily]}
+  # messy "[con_mark=i34X${tfam}]" unmark
 
-  # messy "[con_mark=i34X${ourfam}]" unmark
+  dummywindow "$ghost"
+  messy "[con_mark=$ghost]"             \
+    move to mark "i34X${ori[main]}",    \
+    split "${ori[charfam]}",            \
+    layout tabbed,                      \
+    move "${ori[movemain]}"
 
-  messy "[con_mark=i34GHOST]" \
-    move to workspace "${i3list[WSF]}"
-
-  messy "[con_mark=i34GHOST]"         \
-    floating disable,                 \
-    move to mark "i34X${_splits[0]}", \
-    split "${_splitdir[1]}",          \
-    layout tabbed
-
-  messy "[con_mark=i34${trg}]" \
+  messy "[con_mark=i34${trg}\$]"        \
     move to workspace "${i3list[WSF]}", \
-    floating disable, \
-    move to mark i34GHOST
-  messy "[con_mark=i34GHOST]" focus parent
-  messy mark i34X${ourfam}
+    floating disable,                   \
+    move to mark "$ghost",              \
+    layout "split${ori[charfam]}",      \
+    split "${ori[charfam]}",            \
+    focus, focus parent
+
+  messy mark "i34X${tfam}"
+  # combine with above?
+  messy "[con_mark=i34X${tfam}]" \
+    move "${ori[movemain]}"
+
+  messy "[con_mark=$ghost]" kill
+  
+  i3list[X${tfam}]=${i3list[WSF]}
 }
 
 familyhide(){
@@ -575,9 +503,9 @@ familyhide(){
 
   messy "[con_mark=i34X${tfam}]" move scratchpad
 
-  _v+=("i34F${tfam}" "${famchk}")
-  _v+=("i34MAB" "${i3list[SAB]}")
-  _v+=("i34M${tfam}" "${i3list[S${tfam}]}")
+  _v["i34F${tfam}"]=${famchk}
+  _v["i34M${ori[main]}"]=${i3list[S${ori[main]}]}
+  _v["i34M${tfam}"]=${i3list[S${tfam}]}
 
 }
 
@@ -587,16 +515,13 @@ familyshow(){
 
   local arg=$1 ourfam trg theirfam
 
-  [[ ${ourfam:=${_splits[1]}} =~ ${arg:0:1} ]] \
-    || ourfam=${_splits[2]}
+  [[ ${ourfam:=${ori[fam1]}} =~ ${arg:0:1} ]] \
+    || ourfam=${ori[fam2]}
 
   declare -i i target newfamily
   declare -i ourfamily theirfamily firstfam
 
   ourfamily=${_m[$ourfam]}
-  ERM "$(
-    tobin "$_hidden" ;
-    echo "${i3list[LHI]}")"
 
   # our family doesn't exist
   # familycreate expects single char arg
@@ -613,34 +538,26 @@ familyshow(){
   for ((i=0;i<${#ourfam};i++)); do
     trg=${ourfam:$i:1}
     target=${_m[$trg]}
-    ((target & _hidden)) \
-      && ((_hidden &= ~target)) && ((_visible |= target))
-    # containershow "$trg"
+    ((target & _hidden))        \
+      && ((_hidden &= ~target)) \
+      && ((_visible |= target))
   done
 
-  if ((_isvertical)); then
-    split=h dir=down
-    i3list[SAC]=$((i3list[WFH]/2))
-    splits="AC=${i3list[MAC]}"
-  else
-    split=v dir=right
-    i3list[SAB]=$((i3list[WFW]/2))
-    splits="AB=${i3list[MAB]}"
-  fi
+  i3list[S${ori[main]}]=${ori[sizemainhalf]}
 
   ((newfamily)) || messy "[con_mark=i34X${ourfam}]"    \
                    move to workspace "${i3list[WSF]}", \
                    floating disable,                   \
-                   move to mark "i34X${_splits[0]}"
+                   move to mark "i34X${ori[main]}"
 
   # if $ourfam is the first and the otherfamily
   # is visible swap'em
-  firstfam=${_m[${_splits[1]}]}
+  firstfam=${_m[${ori[fam1]}]}
   ((ourfamily == firstfam && theirfamily & _visible)) \
     && messy "[con_mark=i34X${ourfam}]" \
        swap container with mark "i34X${theirfam}"
 
-  applysplits "$splits"
+  applysplits "${ori[main]}=${i3list[M${ori[main]}]}"
 
 }
 
@@ -648,11 +565,7 @@ initfyra() {
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}()"
 
-  declare -i wsid i
-  declare -a splitsizes
-  declare -i halfwidth=$((i3list[WAW]/2)) 
-  declare -i halfheight=$((i3list[WAH]/2))
-
+  declare -i wsid
   local split
 
   # if we aren't on i3fyra workspace, go there
@@ -664,82 +577,102 @@ initfyra() {
     i3list[WFW]=${i3list[WAW]}
   }
   
-  wsid=${i3list[WSA]}
-  messy "[con_id=$wsid]"          \
-    mark "i34X${_splits[0]}",     \
-    split "${_splitdir[0]}",      \
-    layout "split${_splitdir[0]}"
+  wsid=${i3list[WAI]}
+  messy "[con_id=$wsid]"           \
+    mark "i34X${ori[main]}",       \
+    split "${ori[charmain]}",      \
+    layout "split${ori[charmain]}"
 
-  # setup default layout size marks if not already set
-  ((_isvertical)) \
-    && splitsizes=([0]=$halfheight [1]=$halfwidth) \
-    || splitsizes=([0]=$halfwidth  [1]=$halfheight)
-    
-  splitsizes[2]=${splitsizes[1]}
-
-  for i in "${!_splits[@]}"; do
-    split=${_splits[$i]}
-    [[ -n ${i3list[M$split]} ]] && continue
-
-    i3list[M$split]=${splitsizes[$i]}
-    _v+=("i34M$split" "${splitsizes[$i]}")
+  for split in ${ori[fam1]} ${ori[fam2]} ${ori[main]}; do
+    [[ -n ${i3list[M${split}]} ]] && continue
+    [[ $split = "${ori[main]}" ]] \
+      && size=${ori[sizemainhalf]} \
+      || size=${ori[sizefamhalf]}
+    i3list[M${split}]=$size
+    _v["i34M$split"]=$size
   done
 
-  # create persistent ghost container
-  i3-msg -q "[con_mark=i34GHOST]" kill
-  dummywindow "i34GHOST"
-  messy "[con_mark=i34GHOST]" move scratchpad
-
+  _v["i34F${ori[fam1]}"]=X
+  _v["i34F${ori[fam2]}"]=X
 }
 
 messy() {
 
+  # arguments are valid i3-msg arguments
+  # separate resize commands and execute
+  # all commands at once in cleanup()
   (( __o[verbose] )) && ERM "m $*"
-
   (( __o[dryrun]  )) || {
-    if [[ $* =~ resize ]]; then
-      _sizstring+="$*;"
-    else
-      _msgstring+="$*;"
-    fi
+    [[ $* =~ resize ]] \
+      && _sizstring+="$*;" \
+      || _msgstring+="$*;"
   }
-
-  # i3-msg -q "$*"
+  
 }
 
 multihide(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local trg arg targets i
-
-  arg="$1"
+  local arg=$1 trg trgs i f1=${ori[fam1]} f2=${ori[fam2]}
 
   # only hide visible containers in arg
   for (( i = 0; i < ${#arg}; i++ )); do
     trg=${arg:$i:1}
-    ((_m[$trg] & _visible)) && targets+=$trg
+    ((_m[$trg] & _visible)) && trgs+=$trg
   done
 
-  ((${#targets} == 0)) && return
+  ((${#trgs})) || return
   
   # hide whole families if present in arg and visible
-  if ((_isvertical)); then
-    [[ $targets =~ A && $targets =~ B ]] \
-      && targets=${targets//[AB]/} && familyhide AB
-    [[ $targets =~ C && $targets =~ D ]] \
-      && targets=${targets//[CD]/} && familyhide CD
-  else
-    [[ $targets =~ A && $targets =~ C ]] \
-      && targets=${targets//[AC]/} && familyhide AC
-    [[ $targets =~ B && $targets =~ D ]] \
-      && targets=${targets//[BD]/} && familyhide BD
-  fi
+  [[ $trgs =~ ${f1:0:1} && $trgs =~ ${f1:1:1} ]] \
+    && trgs=${trgs//[$f1]/} && familyhide "$f1"
+  
+  [[ $trgs =~ ${f2:0:1} && $trgs =~ ${f2:1:1} ]] \
+    && trgs=${trgs//[$f2]/} && familyhide "$f2"
 
   # hide rest if any
-  ((${#targets})) && for ((i=0;i<${#targets};i++)); do
-    containerhide "${targets:$i:1}"
+  ((${#trgs})) && for ((i=0;i<${#trgs};i++)); do
+    containerhide "${trgs:$i:1}"
   done
+}
+
+orientationinit() {
+
+  declare -gi _isvertical
+
+  declare -i sw=${i3list[WFW]:-${i3list[WAW]}}
+  declare -i sh=${i3list[WFH]:-${i3list[WAH]}}
+  declare -i swh=$((sw/2))
+  declare -i shh=$((sh/2))
+
+  if [[ ${I3FYRA_ORIENTATION,,} = vertical ]]; then
+    _isvertical=1
+    ori=(
+
+      [main]=AC [fam1]=AB [fam2]=CD
+
+      [charmain]=v        [charfam]=h
+      [movemain]=down     [movefam]=right
+      [resizemain]=height [resizefam]=width
+      [sizemain]=$sh      [sizefam]=$sw 
+      [sizemainhalf]=$shh [sizefamhalf]=$swh
+
+    )
+  else
+    _isvertical=0
+    ori=(
+
+      [main]=AB [fam1]=AC [fam2]=BD
+
+      [charmain]=h        [charfam]=v
+      [movemain]=right    [movefam]=down
+      [resizemain]=width  [resizefam]=height
+      [sizemain]=$sw      [sizefam]=$sh
+      [sizemainhalf]=$swh [sizefamhalf]=$shh
+
+    )
+  fi
 }
 
 swapmeet(){
@@ -753,44 +686,43 @@ swapmeet(){
   messy "[con_mark=${m1}]"  swap mark "${m2}", mark i34tmp
   messy "[con_mark=${m2}]"  mark "${m1}"
   messy "[con_mark=i34tmp]" mark "${m2}"
+  
+  # acn[oldname]=newname
+  declare -A acn
 
-
-  # family swap, rename all existing containers with their twins
+  # swap families
   if [[ $m1 =~ X ]]; then
-    # acn[oldname]=newname
-    if ((_isvertical)); then
-      tspl="${i3list[SAC]}" tdim="${i3list[WFH]}"
-      tmrk=AC
-      acn=([A]=C [B]=D [C]=A [D]=B)
-      _v+=(i3MAB "${i3list[MCD]}")
-      _v+=(i3MCD "${i3list[MAB]}")
-    else
-      tspl="${i3list[SAB]}" tdim="${i3list[WFW]}"
-      tmrk=AB
-      acn=([A]=B [B]=A [C]=D [D]=C)
-      _v+=(i3MAC "${i3list[MBD]}")
-      _v+=(i3MBD "${i3list[MAC]}")
-    fi
 
-  else # swap within family, rename siblings
+    ((_isvertical)) \
+      && acn=([A]=C [B]=D [C]=A [D]=B) \
+      || acn=([A]=B [B]=A [C]=D [D]=C)
+
+    tdim=${ori[sizemain]}
+    tmrk=${ori[main]}
+    tspl=${i3list[S$tmrk]}
+
+    _v[i3M${ori[fam1]}]=${i3list[M${ori[fam2]}]}
+    _v[i3M${ori[fam2]}]=${i3list[M${ori[fam1]}]}
+
+  else # swap within family
+
+    ((_isvertical)) \
+      && acn=([A]=B [B]=A [C]=D [D]=C) \
+      || acn=([A]=C [B]=D [C]=A [D]=B)
+
+    # dont use AFF ?
     tmrk="${i3list[AFF]}"
     tspl="${i3list[S${tmrk}]}"
+    tdim=${ori[sizefam]}
 
-    if ((_isvertical)); then
-      acn=([A]=B [B]=A [C]=D [D]=C)
-      tdim="${i3list[WFW]}"
-    else
-      acn=([A]=C [B]=D [C]=A [D]=B)
-      tdim="${i3list[WFH]}"
-    fi
   fi
 
-  for ((i =0;i< ${#i3list[LEX]};i++)); do
+  for ((i=0;i< ${#i3list[LEX]};i++)); do
     old=${i3list[LEX]:$i:1}
     messy "[con_mark=i34${old}]" mark "i34tmp${old}"
   done
 
-  for ((i =0;i< ${#i3list[LEX]};i++)); do
+  for ((i=0;i< ${#i3list[LEX]};i++)); do
     old=${i3list[LEX]:$i:1}
     messy "[con_mark=i34tmp${old}]" mark "i34${acn[$old]}"
   done
@@ -842,15 +774,14 @@ togglefloat(){
 
 varset() {
 
-  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
+  ((__o[verbose])) && ERM "f ${FUNCNAME[0]}(${_v[*]})"
 
   local key val json re mark
 
   json=$(i3-msg -t get_marks)
 
-  while [[ -n $1 ]]; do
-    key=$1 val=$2
-    shift 2
+  for key in "${!_v[@]}"; do
+    val=${_v[$key]}
     re="\"(${key}=[^\"]+)\""
     [[ $json =~ $re ]] && mark="${BASH_REMATCH[1]}"
 
@@ -926,22 +857,17 @@ windowmove(){
 
   declare -A swapon
 
-  if ((_isvertical)); then
-    sibdir=$((_m[l]|_m[r]))
-    swapon[l]=${_m[AC]} swapon[r]=${_m[BD]}
-    swapon[u]=${_m[AB]} swapon[d]=${_m[CD]}
+  swapon[u]=${_m[AB]} swapon[d]=${_m[CD]}
+  swapon[l]=${_m[AC]} swapon[r]=${_m[BD]}
 
-  else
-    sibdir=$((_m[u]|_m[d]))
-    swapon[u]=${_m[AB]} swapon[d]=${_m[CD]}
-    swapon[l]=${_m[AC]} swapon[r]=${_m[BD]}
+  ((_isvertical)) \
+    && sibdir=$((_m[l]|_m[r])) \
+    || sibdir=$((_m[u]|_m[d]))
 
-  fi
-
-  target=${_m[${i3list[AWP]}]}
-  family=${_m[${i3list[AFF]}]}
-  sibling=${_m[${i3list[AFS]}]}
-  relatives=${_m[${i3list[AFO]}]}
+  target=${_m[${i3list[TWP]}]}
+  family=${_m[${i3list[TFF]}]}
+  sibling=${_m[${i3list[TFS]}]}
+  relatives=${_m[${i3list[TFO]}]}
 
   # moving in to screen edge (wall), toggle something
   if [[ ${wall:-} != none ]]; then

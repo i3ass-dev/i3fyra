@@ -23,6 +23,4 @@ bitwiseinit() {
     [[ ${i3list[LHI]} =~ $k ]] && ((_hidden |= _m[$k]))
     [[ ${i3list[LVI]} =~ $k ]] && ((_visible|= _m[$k]))
   done
-
-  _existing=$((_hidden | _visible))
 }

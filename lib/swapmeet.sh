@@ -11,44 +11,43 @@ swapmeet(){
   messy "[con_mark=${m1}]"  swap mark "${m2}", mark i34tmp
   messy "[con_mark=${m2}]"  mark "${m1}"
   messy "[con_mark=i34tmp]" mark "${m2}"
+  
+  # acn[oldname]=newname
+  declare -A acn
 
-
-  # family swap, rename all existing containers with their twins
+  # swap families
   if [[ $m1 =~ X ]]; then
-    # acn[oldname]=newname
-    if ((_isvertical)); then
-      tspl="${i3list[SAC]}" tdim="${i3list[WFH]}"
-      tmrk=AC
-      acn=([A]=C [B]=D [C]=A [D]=B)
-      _v+=(i3MAB "${i3list[MCD]}")
-      _v+=(i3MCD "${i3list[MAB]}")
-    else
-      tspl="${i3list[SAB]}" tdim="${i3list[WFW]}"
-      tmrk=AB
-      acn=([A]=B [B]=A [C]=D [D]=C)
-      _v+=(i3MAC "${i3list[MBD]}")
-      _v+=(i3MBD "${i3list[MAC]}")
-    fi
 
-  else # swap within family, rename siblings
+    ((_isvertical)) \
+      && acn=([A]=C [B]=D [C]=A [D]=B) \
+      || acn=([A]=B [B]=A [C]=D [D]=C)
+
+    tdim=${ori[sizemain]}
+    tmrk=${ori[main]}
+    tspl=${i3list[S$tmrk]}
+
+    _v[i3M${ori[fam1]}]=${i3list[M${ori[fam2]}]}
+    _v[i3M${ori[fam2]}]=${i3list[M${ori[fam1]}]}
+
+  else # swap within family
+
+    ((_isvertical)) \
+      && acn=([A]=B [B]=A [C]=D [D]=C) \
+      || acn=([A]=C [B]=D [C]=A [D]=B)
+
+    # dont use AFF ?
     tmrk="${i3list[AFF]}"
     tspl="${i3list[S${tmrk}]}"
+    tdim=${ori[sizefam]}
 
-    if ((_isvertical)); then
-      acn=([A]=B [B]=A [C]=D [D]=C)
-      tdim="${i3list[WFW]}"
-    else
-      acn=([A]=C [B]=D [C]=A [D]=B)
-      tdim="${i3list[WFH]}"
-    fi
   fi
 
-  for ((i =0;i< ${#i3list[LEX]};i++)); do
+  for ((i=0;i< ${#i3list[LEX]};i++)); do
     old=${i3list[LEX]:$i:1}
     messy "[con_mark=i34${old}]" mark "i34tmp${old}"
   done
 
-  for ((i =0;i< ${#i3list[LEX]};i++)); do
+  for ((i=0;i< ${#i3list[LEX]};i++)); do
     old=${i3list[LEX]:$i:1}
     messy "[con_mark=i34tmp${old}]" mark "i34${acn[$old]}"
   done

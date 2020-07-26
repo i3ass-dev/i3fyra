@@ -8,9 +8,7 @@ containershow(){
   # if it already is visible, do nothing.
   # if it doesn't exist, create it 
   local trg=$1
-
-  declare -i target
-  target=${_m[$trg]}
+  declare -i target=${_m[$trg]}
 
   ((target & _m[ABCD])) || ERX "$trg not valid container"
 
@@ -19,56 +17,27 @@ containershow(){
   
   elif ((target & _hidden)); then
 
-    # mainsplit is not created
-    [[ -z ${i3list[X${_splits[0]}]} ]] && initfyra
+    declare -i family sibling dest tspl tdim swapon
+    local tfam sib tdest tmrk main 
 
-    declare -i family sibling dest tspl tdim
-    declare -i famshow size1 size2 swapon
+    main=${ori[main]}
+    [[ ${tfam:=${ori[fam1]}} =~ $trg ]] || tfam=${ori[fam2]}
 
-    local tfam sib tdest tmrk mainsplit 
-    local mainfam
-
-    declare -a swap=()
-
-    if ((_isvertical)); then
-      swapon=${_m[BD]}
-      size1=${i3list[WFH]}
-      size2=${i3list[WFW]}
-    else
-      swapon=${_m[CD]}
-      size1=${i3list[WFW]}
-      size2=${i3list[WFH]}
-    fi
-
-    mainsplit=${_splits[0]}
-    mainfam=${_splits[1]}
-
-    family=$((target & _m[$mainfam] ? _m[$mainfam] 
-           :( _m[ABCD] & ~_m[$mainfam] ) ))
-
+    family=${_m[$tfam]}
     sibling=$((family & ~target))
-    dest=$((sibling & _visible ? family : _m[$mainsplit]))
-    tfam=${_n[$family]}
+    dest=$((sibling & _visible ? family : _m[$main]))
     sib=${_n[$sibling]}
     tdest=i34X${_n[$dest]}
+
+    swapon=$((_m[ABCD] & ~_m[$main]))
 
     # remove target from hidden here otherwise
     # familycreation gets borked up
     ((_hidden &= ~target))
 
-    # if tdest is main container, trg is first in family
-    if ((dest == _m[$mainsplit])) ; then
+    if ((dest == _m[$main])) ; then
 
       familyshow "$trg"
-      # familycreate "$trg"
-      famshow=1
-
-      tspl=${i3list[M$mainsplit]}  # stored split
-      tdim=$size1                  # workspace width/height
-      tmrk=$mainsplit
-
-      ((target & _m[$mainfam])) \
-        && swap=("X$tfam" "X${i3list[LAL]/$tfam/}")
 
     else
       # WSA = active workspace
@@ -77,28 +46,22 @@ containershow(){
         floating disable, move to mark "$tdest"
 
       tspl=${i3list[M${tfam}]}
-      tdim=$size2     
+      tdim=${ori[sizefam]}     
       tmrk=$tfam
 
-      ((sibling & swapon)) && swap=("$trg" "$sib")
+      ((sibling & swapon)) && {
+        messy "[con_mark=i34$trg]" \
+          swap container with mark "i34$sib"
+      }
+
+      ((tspl && (tdim==tspl || !_famact) )) && {
+          i3list[S${tmrk}]=$((tdim/2))
+          applysplits "$tmrk=$tspl"
+      }
 
     fi
 
-    ((${#swap[@]})) && {
-      messy "[con_mark=i34${swap[0]}]" \
-        swap container with mark "i34${swap[1]}"
-    }
-
-    ((tspl)) \
-      && ((tdim==size2 || !_famact)) && {
-        i3list[S${tmrk}]=$((tdim/2))
-        applysplits "$tmrk=$tspl"
-    }
-
     ((_visible |= target))
-
-    # bring the whole family
-    # ((famshow && sibling & _hidden)) && containershow "$sib"
 
   else
     containercreate "$trg"

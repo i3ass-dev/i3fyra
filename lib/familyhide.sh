@@ -25,8 +25,8 @@ familyhide(){
 
   messy "[con_mark=i34X${tfam}]" move scratchpad
 
-  _v+=("i34F${tfam}" "${famchk}")
-  _v+=("i34MAB" "${i3list[SAB]}")
-  _v+=("i34M${tfam}" "${i3list[S${tfam}]}")
+  _v["i34F${tfam}"]=${famchk}
+  _v["i34M${ori[main]}"]=${i3list[S${ori[main]}]}
+  _v["i34M${tfam}"]=${i3list[S${tfam}]}
 
 }

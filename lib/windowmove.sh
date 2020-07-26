@@ -63,22 +63,17 @@ windowmove(){
 
   declare -A swapon
 
-  if ((_isvertical)); then
-    sibdir=$((_m[l]|_m[r]))
-    swapon[l]=${_m[AC]} swapon[r]=${_m[BD]}
-    swapon[u]=${_m[AB]} swapon[d]=${_m[CD]}
+  swapon[u]=${_m[AB]} swapon[d]=${_m[CD]}
+  swapon[l]=${_m[AC]} swapon[r]=${_m[BD]}
 
-  else
-    sibdir=$((_m[u]|_m[d]))
-    swapon[u]=${_m[AB]} swapon[d]=${_m[CD]}
-    swapon[l]=${_m[AC]} swapon[r]=${_m[BD]}
+  ((_isvertical)) \
+    && sibdir=$((_m[l]|_m[r])) \
+    || sibdir=$((_m[u]|_m[d]))
 
-  fi
-
-  target=${_m[${i3list[AWP]}]}
-  family=${_m[${i3list[AFF]}]}
-  sibling=${_m[${i3list[AFS]}]}
-  relatives=${_m[${i3list[AFO]}]}
+  target=${_m[${i3list[TWP]}]}
+  family=${_m[${i3list[TFF]}]}
+  sibling=${_m[${i3list[TFS]}]}
+  relatives=${_m[${i3list[TFO]}]}
 
   # moving in to screen edge (wall), toggle something
   if [[ ${wall:-} != none ]]; then
