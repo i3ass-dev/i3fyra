@@ -5,7 +5,7 @@ applysplits(){
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
   local i tsn dir trg tfam
-  declare -i tsv resizedo size target sibling
+  declare -i tsv splitexist size target sibling
 
   for i in ${1}; do
     tsn=${i%=*} # target name of split
@@ -14,7 +14,7 @@ applysplits(){
     if [[ $tsn = "${ori[main]}" ]]; then
       trg="X${ori[fam1]}" 
       dir=${ori[resizemain]} size=${ori[sizemain]}
-      resizedo=$((i3list[$trg] == i3list[WSF]))
+      splitexist=1
     else
       trg=${tsn:0:1}
       dir=${ori[resizefam]} size=${ori[sizefam]}
@@ -22,16 +22,16 @@ applysplits(){
       target=${_m[$trg]}
       [[ ${tfam:=${ori[fam1]}} =~ $trg ]] || tfam=${ori[fam2]}
       sibling=$((_m[$tfam] & ~target))
-      resizedo=$((target & _visible && sibling & _visible))
+      splitexist=$((target & _visible && sibling & _visible))
     fi
 
     ((tsv<0)) && tsv=$((size-(tsv*-1)))
 
     # i3list[XAC | XAB] has value of the workspace they are at
-    ((resizedo)) && {
+    ((splitexist)) && {
       # i3list[Sxx] = current/actual split xx
       i3list[S${tsn}]=${tsv}
-      messy "[con_mark=i34$trg]" resize set "$dir" "$tsv" px
+      sezzy "con_mark=i34$trg" resize set "$dir" "$tsv" px
     }
 
     # i3list[Mxx] = last/stored    split xx

@@ -26,8 +26,8 @@ swapmeet(){
     tmrk=${ori[main]}
     tspl=${i3list[S$tmrk]}
 
-    _v[i3M${ori[fam1]}]=${i3list[M${ori[fam2]}]}
-    _v[i3M${ori[fam2]}]=${i3list[M${ori[fam1]}]}
+    _v[i34M${ori[fam1]}]=${i3list[M${ori[fam2]}]}
+    _v[i34M${ori[fam2]}]=${i3list[M${ori[fam1]}]}
 
   else # swap within family
 
@@ -53,6 +53,6 @@ swapmeet(){
   done
 
   # invert split
-  ((tspl+tdim)) && applysplits "$tmrk=$((tdim-tspl))"
+  [[ $m1 =~ X ]] && ((tspl+tdim)) && applysplits "$tmrk=$((tdim-tspl))"
   messy "[con_id=${i3list[TWC]}]" focus
 }

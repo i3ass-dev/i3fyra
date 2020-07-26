@@ -19,5 +19,6 @@ varset() {
     else
       messy "[con_mark=${key}]" mark "${key}=${val}"
     fi
+    unset mark
   done
 }

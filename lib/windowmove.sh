@@ -61,6 +61,9 @@ windowmove(){
   eval "$wizoutput"
   unset trgx trgy sx sy sw sh
 
+  ((__o[verbose])) \
+    && ERM "w trgcon=$trgcon wall=$wall trgpar=$trgpar"
+
   declare -A swapon
 
   swapon[u]=${_m[AB]} swapon[d]=${_m[CD]}
@@ -82,19 +85,23 @@ windowmove(){
     if ((_m[$dir] & sibdir)); then
       if ((sibling & _visible)); then
         containerhide "${_n[$sibling]}"
-      else
+      elif ((sibling & _hidden)); then
         containershow "${_n[$sibling]}"
         ((sibling & swapon[$dir])) \
           && swapmeet "i34${_n[$sibling]}" "i34${_n[$target]}"
+      else # sibling doesn't exist, do nothing
+        return
       fi
     # family toggling
     else
       if ((relatives & _visible)); then
         familyhide "${_n[$relatives]}"
-      else
+      elif ((relatives & _hidden)); then
         familyshow "${_n[$relatives]}"
         ((relatives & swapon[$dir])) \
           && swapmeet "i34X${_n[$relatives]}" "i34X${_n[$family]}"
+      else # relatives doesn't exist, do nothing
+        return
       fi
     fi
 

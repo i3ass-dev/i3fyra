@@ -13,6 +13,7 @@ main(){
   trap 'cleanup' EXIT
 
   declare -gA _v         # "i3var"s to set
+  declare -gA _r         # resize commands
   declare -g  _msgstring # combined i3-msg
   declare -g  _sizstring # combined resize i3-msg
 
@@ -65,8 +66,8 @@ main(){
 
   fi
 
-  [[ -n ${i3list[SIBFOC]} ]] \
-    && messy "[con_mark=i34${i3list[SIBFOC]}]" focus child
+  # [[ -n ${i3list[SIBFOC]} ]] \
+  #   && messy "[con_mark=i34${i3list[SIBFOC]}]" focus child
 
 }
 

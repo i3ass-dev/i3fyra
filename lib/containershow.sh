@@ -49,6 +49,8 @@ containershow(){
       tdim=${ori[sizefam]}     
       tmrk=$tfam
 
+      ((_visible |= target))
+
       ((sibling & swapon)) && {
         messy "[con_mark=i34$trg]" \
           swap container with mark "i34$sib"
@@ -60,8 +62,6 @@ containershow(){
       }
 
     fi
-
-    ((_visible |= target))
 
   else
     containercreate "$trg"
