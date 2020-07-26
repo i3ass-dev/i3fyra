@@ -12,7 +12,7 @@ cleanup() {
   # 2>&1 >/dev/null | head -n -3
   [[ -n $_msgstring ]] && i3-msg "${qflag:-}" "$_msgstring"
   [[ -n $_sizstring ]] && i3-msg "${qflag:-}" "$_sizstring"
-
+  ERM "sss $_sizstring"
   ((__o[verbose])) && {
     # _=${_n[1]}
     # _=$_isvertical
