@@ -7,7 +7,7 @@ main(){
   ((__o[verbose])) && {
     declare -gi _stamp
     _stamp=$(date +%s%N)
-    ERM "---i3fyra start---"
+    ERM $'\n'"---i3fyra start---"
   }
 
   trap 'cleanup' EXIT
@@ -15,7 +15,6 @@ main(){
   declare -gA _v         # "i3var"s to set
   declare -gA _r         # resize commands
   declare -g  _msgstring # combined i3-msg
-  declare -g  _sizstring # combined resize i3-msg
 
   declare -gi _visible _hidden
   declare -gi _famact # ?
@@ -41,23 +40,49 @@ main(){
   # create bitmasks
   declare -gA _m  # bitwise masks (_m[A]=1)
   declare -ga _n  # bitwise names (_n[1]=A)
+  declare -gA _p  # bitwise vertical pos
   bitwiseinit
 
+  # if "target" is ABCD, transform to vertical position
+
+  local target
+  [[ -n ${__o[layout]} ]] && __o[layout]=${__o[layout]//${ori[main]}/main}
+  target=${__o[show]:-${__o[hide]:-${__o[layout]:-${__o[move]}}}}
+
+
+  [[ $target =~ [ABCD] ]] && {
+    q=(A B C D)
+    for k in ${!q[@]}; do
+      vpos=${i3list[VP${q[$k]}]:=${q[$k]}}
+      [[ ${q[$k]} != "$vpos" ]] && {
+        target=${target//${q[$k]}/@@$k}
+      }
+    done
+
+    ERM "rrrv $target"
+    for k in ${!q[@]}; do
+      target=${target//@@$k/${i3list[VP${q[$k]}]}}
+    done
+
+    ERM "rrrssd $target"
+  }
+  
+
   if [[ -n ${__o[show]} ]]; then
-    containershow "${__o[show]}"
+    containershow "$target"
 
   elif [[ -n ${__o[hide]} ]]; then
-    containerhide "${__o[hide]}"
+    containerhide "$target"
 
   elif [[ -n ${__o[layout]} ]]; then
-    applysplits "${__o[layout]}"
+    applysplits "$target"
 
   elif ((__o[float])); then
     togglefloat
     messy "[con_id=${i3list[AWC]}]" focus
 
   elif [[ -n ${__o[move]} ]]; then
-    windowmove "${__o[move]}"
+    windowmove "$target"
     [[ -z ${i3list[SIBFOC]} ]] \
       && messy "[con_id=${i3list[AWC]}]" focus
 

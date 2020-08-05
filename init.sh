@@ -3,15 +3,15 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.944
-updated: 2020-07-26 by budRich
+i3fyra - version: 0.96
+updated: 2020-07-31 by budRich
 EOB
 }
 
 
 # environment variables
 : "${I3FYRA_MAIN_CONTAINER:=A}"
-: "${I3FYRA_WS:=1}"
+: "${I3FYRA_WS:=}"
 : "${I3FYRA_ORIENTATION:=horizontal}"
 
 

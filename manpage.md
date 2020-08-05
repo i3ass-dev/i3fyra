@@ -194,7 +194,7 @@ defaults to: A
 Workspace to use for i3fyra. If not set, the firs
 workspace that request to create the layout will
 be used.
-defaults to: 1
+defaults to: 
 
 `I3FYRA_ORIENTATION`  
 If set to `vertical` main split will be `AC` and

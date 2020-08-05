@@ -29,9 +29,10 @@ familyshow(){
   for ((i=0;i<${#ourfam};i++)); do
     trg=${ourfam:$i:1}
     target=${_m[$trg]}
-    ((target & _hidden))        \
-      && ((_hidden &= ~target)) \
-      && ((_visible |= target))
+    if ((target & _hidden)); then
+      ((_hidden &= ~target))
+      ((_visible |= target))
+    fi
   done
 
   i3list[S${ori[main]}]=${ori[sizemainhalf]}

@@ -6,7 +6,7 @@ bitwiseinit() {
   declare -i i
 
   for k in A B C D l r u d; do
-    _m[$k]=$((1<<i++))
+    _m[$k]=$((3<<(2*i++) ))
   done
 
   _m[AB]=$((_m[A] | _m[B])) _m[AC]=$((_m[A] | _m[C]))

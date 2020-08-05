@@ -50,19 +50,19 @@ windowmove(){
   # get visible info from i3viswiz
   # trgcon is the container currently at target pos
   # trgpar is the parent of trgcon (A|B|C|D)
-  local wall trgpar wizoutput
+  local wall trgpar wizoutput groupsize
   declare -i trgcon family sibling target relatives sibdir
 
   ((__o[dryrun])) && [[ -z ${wizoutput:=${i3list[VISWIZ]}} ]] \
-    && wizoutput='trgcon=3333 wall=up trgpar=C' 
+    && wizoutput='trgcon=3333 wall=up trgpar=C groupsize=1' 
 
   : "${wizoutput:="$(i3viswiz -p "$dir" | head -1)"}"
 
   eval "$wizoutput"
-  unset trgx trgy sx sy sw sh
 
   ((__o[verbose])) \
-    && ERM "w trgcon=$trgcon wall=$wall trgpar=$trgpar"
+    && ERM "w tx=$trgx ty=$trgy trgcon=$trgcon wall=$wall trgpar=$trgpar groupsize=$groupsize"
+  unset trgx trgy sx sy sw sh
 
   declare -A swapon
 
@@ -72,41 +72,54 @@ windowmove(){
   ((_isvertical)) \
     && sibdir=$((_m[l]|_m[r])) \
     || sibdir=$((_m[u]|_m[d]))
-
+    
   target=${_m[${i3list[TWP]}]}
   family=${_m[${i3list[TFF]}]}
   sibling=${_m[${i3list[TFS]}]}
   relatives=${_m[${i3list[TFO]}]}
 
-  # moving in to screen edge (wall), toggle something
-  if [[ ${wall:-} != none ]]; then
+  if [[ ${wall:-} != none ]]; then # hit wall, toggle something
 
-    # sibling toggling
-    if ((_m[$dir] & sibdir)); then
+    if ((_m[$dir] & sibdir)); then # sibling toggling
+      
+      local sib=${_n[$sibling]}
+
       if ((sibling & _visible)); then
-        containerhide "${_n[$sibling]}"
+        containerhide "$sib"
       elif ((sibling & _hidden)); then
-        containershow "${_n[$sibling]}"
+        containershow "$sib"
         ((sibling & swapon[$dir])) \
-          && swapmeet "i34${_n[$sibling]}" "i34${_n[$target]}"
-      else # sibling doesn't exist, do nothing
-        return
+          && swapmeet "i34$sib" "i34${_n[$target]}"
+      elif ((groupsize > 1)); then # sibling doesn't exist
+        # groupsize comes from viswiz and is the number
+        # of real siblings in the current container
+        # if its not more then one, do nothing
+        windowmove "$sib"
+        ((sibling & swapon[$dir])) \
+          || swapmeet "i34$sib" "i34${_n[$target]}"
       fi
-    # family toggling
-    else
+    
+    else # family toggling
+
+      local rel=${_n[$relatives]}
+
       if ((relatives & _visible)); then
-        familyhide "${_n[$relatives]}"
+        familyhide "$rel"
       elif ((relatives & _hidden)); then
-        familyshow "${_n[$relatives]}"
+        familyshow "$rel"
         ((relatives & swapon[$dir])) \
-          && swapmeet "i34X${_n[$relatives]}" "i34X${_n[$family]}"
-      else # relatives doesn't exist, do nothing
-        return
+          && swapmeet "i34X$rel" "i34X${_n[$family]}"
+      elif ((groupsize > 1)); then # relatives doesn't exist
+        # groupsize comes from viswiz and is the number
+        # of real siblings in the current container
+        # if its not more then one, do nothing
+        windowmove "${rel:0:1}"
+        ((relatives & swapon[$dir])) \
+          || swapmeet "i34X$rel" "i34X${_n[$family]}"
       fi
     fi
 
-  else
-    # trgpar is visible, if layout is tabbed just move it
+  else # trgpar is visible
     if [[ ${i3list[C${trgpar}L]} =~ tabbed|stacked ]]; then
       
       messy "[con_id=${i3list[TWC]}]" \

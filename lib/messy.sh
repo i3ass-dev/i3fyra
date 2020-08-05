@@ -10,8 +10,9 @@ messy() {
 }
 
 sezzy() {
-  local criterion=$1 args=${@:2}
-
+  local criterion=$1 args
+  shift
+  args=$*
   (( __o[verbose] )) && ERM "r [$criterion] $args"
   (( __o[dryrun]  )) || _r["$criterion"]=$args
 }

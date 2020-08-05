@@ -1,8 +1,8 @@
 ---
 description: >
   An advanced, simple grid-based tiling layout
-updated:       2020-07-26
-version:       0.944
+updated:       2020-07-31
+version:       0.96
 author:        budRich
 repo:          https://github.com/budlabs/i3ass
 created:       2017-01-14
@@ -10,7 +10,7 @@ dependencies:  [bash, gawk, i3, i3list, i3gw, i3var, i3viswiz]
 see-also:      [i3(1), i3list(1), i3gw(1), i3var(1), i3viswiz(1)]
 environ:
     I3FYRA_MAIN_CONTAINER:  A
-    I3FYRA_WS: 1
+    I3FYRA_WS:
     I3FYRA_ORIENTATION: horizontal
 synopsis: |
     --show|-s CONTAINER [--array ARRAY] [--verbose] [--dryrun]

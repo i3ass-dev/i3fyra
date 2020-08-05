@@ -3,15 +3,15 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.944
-updated: 2020-07-26 by budRich
+i3fyra - version: 0.96
+updated: 2020-07-31 by budRich
 EOB
 }
 
 
 # environment variables
 : "${I3FYRA_MAIN_CONTAINER:=A}"
-: "${I3FYRA_WS:=1}"
+: "${I3FYRA_WS:=}"
 : "${I3FYRA_ORIENTATION:=horizontal}"
 
 
@@ -22,14 +22,14 @@ main(){
   ((__o[verbose])) && {
     declare -gi _stamp
     _stamp=$(date +%s%N)
-    ERM "---i3fyra start---"
+    ERM $'\n'"---i3fyra start---"
   }
 
   trap 'cleanup' EXIT
 
   declare -gA _v         # "i3var"s to set
+  declare -gA _r         # resize commands
   declare -g  _msgstring # combined i3-msg
-  declare -g  _sizstring # combined resize i3-msg
 
   declare -gi _visible _hidden
   declare -gi _famact # ?
@@ -56,6 +56,7 @@ main(){
   declare -gA _m  # bitwise masks (_m[A]=1)
   declare -ga _n  # bitwise names (_n[1]=A)
   bitwiseinit
+  
 
   if [[ -n ${__o[show]} ]]; then
     containershow "${__o[show]}"
@@ -80,8 +81,8 @@ main(){
 
   fi
 
-  [[ -n ${i3list[SIBFOC]} ]] \
-    && messy "[con_mark=i34${i3list[SIBFOC]}]" focus child
+  # [[ -n ${i3list[SIBFOC]} ]] \
+  #   && messy "[con_mark=i34${i3list[SIBFOC]}]" focus child
 
 }
 
@@ -189,24 +190,34 @@ applysplits(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local i tsn dir trg
-  declare -i tsv
+  local i tsn dir trg tfam
+  declare -i tsv splitexist size target sibling
 
   for i in ${1}; do
     tsn=${i%=*} # target name of split
     tsv=${i#*=} # target value of split
 
-    [[ $tsn = "${ori[main]}" ]] \
-      && trg="X${ori[fam1]}" dir=${ori[resizemain]} \
-      || trg=${tsn:0:1}      dir=${ori[resizefam]}
+    if [[ $tsn = "${ori[main]}" ]]; then
+      trg="X${ori[fam1]}" 
+      dir=${ori[resizemain]} size=${ori[sizemain]}
+      splitexist=1
+    else
+      trg=${tsn:0:1}
+      dir=${ori[resizefam]} size=${ori[sizefam]}
 
-    ((tsv<0)) && tsv=$((ori[sizemain]-(tsv*-1)))
+      target=${_m[$trg]}
+      [[ ${tfam:=${ori[fam1]}} =~ $trg ]] || tfam=${ori[fam2]}
+      sibling=$((_m[$tfam] & ~target))
+      splitexist=$((target & _visible && sibling & _visible))
+    fi
+
+    ((tsv<0)) && tsv=$((size-(tsv*-1)))
 
     # i3list[XAC | XAB] has value of the workspace they are at
-    ((i3list[$trg] == i3list[WSF] || _m[$trg] & _visible)) && {
+    ((splitexist)) && {
       # i3list[Sxx] = current/actual split xx
       i3list[S${tsn}]=${tsv}
-      messy "[con_mark=i34$trg]" resize set "$dir" "$tsv" px
+      sezzy "con_mark=i34$trg" resize set "$dir" "$tsv" px
     }
 
     # i3list[Mxx] = last/stored    split xx
@@ -222,7 +233,7 @@ bitwiseinit() {
   declare -i i
 
   for k in A B C D l r u d; do
-    _m[$k]=$((1<<i++))
+    _m[$k]=$((2<<(2*i++) ))
   done
 
   _m[AB]=$((_m[A] | _m[B])) _m[AC]=$((_m[A] | _m[C]))
@@ -239,29 +250,33 @@ bitwiseinit() {
     [[ ${i3list[LHI]} =~ $k ]] && ((_hidden |= _m[$k]))
     [[ ${i3list[LVI]} =~ $k ]] && ((_visible|= _m[$k]))
   done
+
+  ((i3list[POS])) && {
+    # setup pos masks
+    # 00011011
+  }
 }
 
 cleanup() {
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}()"
 
-  local qflag
+  local qflag k s
 
   ((__o[verbose])) || qflag='-q'
 
   ((${#_v[@]})) && varset
-  # 2>&1 >/dev/null | head -n -3
+
   [[ -n $_msgstring ]] && i3-msg "${qflag:-}" "$_msgstring"
-  [[ -n $_sizstring ]] && i3-msg "${qflag:-}" "$_sizstring"
+  ((${#_r[@]})) && {
+    for k in "${!_r[@]}"; do s+="[$k] ${_r[$k]};" ; done
+    i3-msg "${qflag:-}" "$s"
+  }
 
   ((__o[verbose])) && {
-    # _=${_n[1]}
-    # _=$_isvertical
-    # _=$_existing
     local delta=$(( ($(date +%s%N)-_stamp) /1000 ))
     local time=$(((delta / 1000) % 1000))
-    ERM  $'\n'"${time}ms"
-    ERM "----------------------------"
+    ERM  "---i3fyra done: ${time}ms---"
   }
 }
 
@@ -314,10 +329,10 @@ containerhide(){
   declare -i target sibling splitmain splitfam
 
   main=${ori[main]}
-  splitmain=${i3list[S$main]}
-  splitfam=${i3list[S$tfam]}
-
   [[ ${tfam:=${ori[fam1]}} =~ $trg ]] || tfam=${ori[fam2]}
+
+  splitmain=${i3list[S$main]:=0}
+  splitfam=${i3list[S$tfam]:=0}
 
   target=${_m[$trg]}
   sibling=$((_m[$tfam] & ~target))
@@ -338,12 +353,10 @@ containerhide(){
   ((splitmain && splitmain!=ori[sizemain])) && {
     _v["i34M${main}"]=$splitmain
     i3list[M${main}]=$splitmain
-  }
-
-  ((splitfam && splitfam!=ori[sizefam])) && {
     _v["i34M${tfam}"]=$splitfam
     i3list[M${tfam}]=$splitfam
   }
+
 }
 
 
@@ -397,6 +410,8 @@ containershow(){
       tdim=${ori[sizefam]}     
       tmrk=$tfam
 
+      ((_visible |= target))
+
       ((sibling & swapon)) && {
         messy "[con_mark=i34$trg]" \
           swap container with mark "i34$sib"
@@ -408,8 +423,6 @@ containershow(){
       }
 
     fi
-
-    ((_visible |= target))
 
   else
     containercreate "$trg"
@@ -504,8 +517,8 @@ familyhide(){
   messy "[con_mark=i34X${tfam}]" move scratchpad
 
   _v["i34F${tfam}"]=${famchk}
-  _v["i34M${ori[main]}"]=${i3list[S${ori[main]}]}
-  _v["i34M${tfam}"]=${i3list[S${tfam}]}
+  _v["i34M${ori[main]}"]=${i3list[S${ori[main]}]:=0}
+  _v["i34M${tfam}"]=${i3list[S${tfam}]:=0}
 
 }
 
@@ -538,9 +551,10 @@ familyshow(){
   for ((i=0;i<${#ourfam};i++)); do
     trg=${ourfam:$i:1}
     target=${_m[$trg]}
-    ((target & _hidden))        \
-      && ((_hidden &= ~target)) \
-      && ((_visible |= target))
+    if ((target & _hidden)); then
+      ((_hidden &= ~target))
+      ((_visible |= target))
+    fi
   done
 
   i3list[S${ori[main]}]=${ori[sizemainhalf]}
@@ -602,12 +616,15 @@ messy() {
   # separate resize commands and execute
   # all commands at once in cleanup()
   (( __o[verbose] )) && ERM "m $*"
-  (( __o[dryrun]  )) || {
-    [[ $* =~ resize ]] \
-      && _sizstring+="$*;" \
-      || _msgstring+="$*;"
-  }
-  
+  (( __o[dryrun]  )) || _msgstring+="$*;"
+}
+
+sezzy() {
+  local criterion=$1 args
+  shift
+  args=$*
+  (( __o[verbose] )) && ERM "r [$criterion] $args"
+  (( __o[dryrun]  )) || _r["$criterion"]=$args
 }
 
 multihide(){
@@ -679,7 +696,7 @@ swapmeet(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local m1=$1 m2=$2 tmrk old
+  local m1=$1 m2=$2 tmrk k
   declare -i tspl tdim i
   declare -A acn
 
@@ -690,7 +707,7 @@ swapmeet(){
   # acn[oldname]=newname
   declare -A acn
 
-  # swap families
+  # swap families, rename all containers
   if [[ $m1 =~ X ]]; then
 
     ((_isvertical)) \
@@ -701,14 +718,24 @@ swapmeet(){
     tmrk=${ori[main]}
     tspl=${i3list[S$tmrk]}
 
-    _v[i3M${ori[fam1]}]=${i3list[M${ori[fam2]}]}
-    _v[i3M${ori[fam2]}]=${i3list[M${ori[fam1]}]}
+    _v[i34M${ori[fam1]}]=${i3list[M${ori[fam2]}]}
+    _v[i34M${ori[fam2]}]=${i3list[M${ori[fam1]}]}
+
+    for k in A B C D; do
+      ((_m[$k] & (_visible | _hidden) )) || continue
+      messy "[con_mark=i34$k]" mark "i34tmp$k"
+    done
+
+    for k in A B C D; do
+      ((_m[$k] & (_visible | _hidden) )) || continue
+      messy "[con_mark=i34tmp$k]" mark "i34${acn[$k]}"
+    done
 
   else # swap within family
 
-    ((_isvertical)) \
-      && acn=([A]=B [B]=A [C]=D [D]=C) \
-      || acn=([A]=C [B]=D [C]=A [D]=B)
+    # ((_isvertical)) \
+    #   && acn=([A]=B [B]=A [C]=D [D]=C) \
+    #   || acn=([A]=C [B]=D [C]=A [D]=B)
 
     # dont use AFF ?
     tmrk="${i3list[AFF]}"
@@ -716,16 +743,6 @@ swapmeet(){
     tdim=${ori[sizefam]}
 
   fi
-
-  for ((i=0;i< ${#i3list[LEX]};i++)); do
-    old=${i3list[LEX]:$i:1}
-    messy "[con_mark=i34${old}]" mark "i34tmp${old}"
-  done
-
-  for ((i=0;i< ${#i3list[LEX]};i++)); do
-    old=${i3list[LEX]:$i:1}
-    messy "[con_mark=i34tmp${old}]" mark "i34${acn[$old]}"
-  done
 
   # invert split
   ((tspl+tdim)) && applysplits "$tmrk=$((tdim-tspl))"
@@ -791,6 +808,7 @@ varset() {
     else
       messy "[con_mark=${key}]" mark "${key}=${val}"
     fi
+    unset mark
   done
 }
 
@@ -844,15 +862,18 @@ windowmove(){
   # get visible info from i3viswiz
   # trgcon is the container currently at target pos
   # trgpar is the parent of trgcon (A|B|C|D)
-  local wall trgpar wizoutput
+  local wall trgpar wizoutput groupsize
   declare -i trgcon family sibling target relatives sibdir
 
   ((__o[dryrun])) && [[ -z ${wizoutput:=${i3list[VISWIZ]}} ]] \
-    && wizoutput='trgcon=3333 wall=up trgpar=C' 
+    && wizoutput='trgcon=3333 wall=up trgpar=C groupsize=1' 
 
   : "${wizoutput:="$(i3viswiz -p "$dir" | head -1)"}"
 
   eval "$wizoutput"
+
+  ((__o[verbose])) \
+    && ERM "w tx=$trgx ty=$trgy trgcon=$trgcon wall=$wall trgpar=$trgpar groupsize=$groupsize"
   unset trgx trgy sx sy sw sh
 
   declare -A swapon
@@ -869,31 +890,48 @@ windowmove(){
   sibling=${_m[${i3list[TFS]}]}
   relatives=${_m[${i3list[TFO]}]}
 
-  # moving in to screen edge (wall), toggle something
-  if [[ ${wall:-} != none ]]; then
+  if [[ ${wall:-} != none ]]; then # hit wall, toggle something
 
-    # sibling toggling
-    if ((_m[$dir] & sibdir)); then
+    if ((_m[$dir] & sibdir)); then # sibling toggling
+      
+      local sib=${_n[$sibling]}
+
       if ((sibling & _visible)); then
-        containerhide "${_n[$sibling]}"
-      else
-        containershow "${_n[$sibling]}"
+        containerhide "$sib"
+      elif ((sibling & _hidden)); then
+        containershow "$sib"
         ((sibling & swapon[$dir])) \
-          && swapmeet "i34${_n[$sibling]}" "i34${_n[$target]}"
+          && swapmeet "i34$sib" "i34${_n[$target]}"
+      elif ((groupsize > 1)); then # sibling doesn't exist
+        # groupsize comes from viswiz and is the number
+        # of real siblings in the current container
+        # if its not more then one, do nothing
+        windowmove "$sib"
+        ((sibling & swapon[$dir])) \
+          || swapmeet "i34$sib" "i34${_n[$target]}"
       fi
-    # family toggling
-    else
+    
+    else # family toggling
+
+      local rel=${_n[$relatives]}
+
       if ((relatives & _visible)); then
-        familyhide "${_n[$relatives]}"
-      else
-        familyshow "${_n[$relatives]}"
+        familyhide "$rel"
+      elif ((relatives & _hidden)); then
+        familyshow "$rel"
         ((relatives & swapon[$dir])) \
-          && swapmeet "i34X${_n[$relatives]}" "i34X${_n[$family]}"
+          && swapmeet "i34X$rel" "i34X${_n[$family]}"
+      elif ((groupsize > 1)); then # relatives doesn't exist
+        # groupsize comes from viswiz and is the number
+        # of real siblings in the current container
+        # if its not more then one, do nothing
+        windowmove "${rel:0:1}"
+        ((relatives & swapon[$dir])) \
+          || swapmeet "i34X$rel" "i34X${_n[$family]}"
       fi
     fi
 
-  else
-    # trgpar is visible, if layout is tabbed just move it
+  else # trgpar is visible
     if [[ ${i3list[C${trgpar}L]} =~ tabbed|stacked ]]; then
       
       messy "[con_id=${i3list[TWC]}]" \

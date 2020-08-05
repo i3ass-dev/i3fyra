@@ -15,10 +15,10 @@ containerhide(){
   declare -i target sibling splitmain splitfam
 
   main=${ori[main]}
-  splitmain=${i3list[S$main]}
-  splitfam=${i3list[S$tfam]}
-
   [[ ${tfam:=${ori[fam1]}} =~ $trg ]] || tfam=${ori[fam2]}
+
+  splitmain=${i3list[S$main]:=0}
+  splitfam=${i3list[S$tfam]:=0}
 
   target=${_m[$trg]}
   sibling=$((_m[$tfam] & ~target))
@@ -39,12 +39,10 @@ containerhide(){
   ((splitmain && splitmain!=ori[sizemain])) && {
     _v["i34M${main}"]=$splitmain
     i3list[M${main}]=$splitmain
-  }
-
-  ((splitfam && splitfam!=ori[sizefam])) && {
     _v["i34M${tfam}"]=$splitfam
     i3list[M${tfam}]=$splitfam
   }
+
 }
 
 
