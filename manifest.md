@@ -1,23 +1,23 @@
 ---
 description: >
   An advanced, simple grid-based tiling layout
-updated:       2020-07-31
-version:       0.96
+updated:       2020-08-06
+version:       1.018
 author:        budRich
 repo:          https://github.com/budlabs/i3ass
 created:       2017-01-14
 dependencies:  [bash, gawk, i3, i3list, i3gw, i3var, i3viswiz]
-see-also:      [i3(1), i3list(1), i3gw(1), i3var(1), i3viswiz(1)]
+see-also:      [i3(1), i3list(1), i3viswiz(1)]
 environ:
     I3FYRA_MAIN_CONTAINER:  A
     I3FYRA_WS:
     I3FYRA_ORIENTATION: horizontal
 synopsis: |
-    --show|-s CONTAINER [--array ARRAY] [--verbose] [--dryrun]
-    --float|-a [--target|-t CRITERION] [--array ARRAY] [--verbose] [--dryrun]
-    --hide|-z CONTAINER [--array ARRAY] [--verbose] [--dryrun]
-    --layout|-l LAYOUT [--array ARRAY] [--verbose] [--dryrun]
-    --move|-m DIRECTION|CONTAINER [--speed|-p INT]  [--target|-t CRITERION] [--array ARRAY] [--verbose] [--dryrun]
+    --show|-s CONTAINER [--force|-f] [--array ARRAY] [--verbose] [--dryrun]
+    --float|-a [--array ARRAY] [--verbose] [--dryrun]
+    --hide|-z CONTAINER [--force|-f] [--array ARRAY] [--verbose] [--dryrun]
+    --layout|-l LAYOUT [--force|-f] [--array ARRAY] [--verbose] [--dryrun]
+    --move|-m DIRECTION|CONTAINER [--force|-f] [--speed|-p INT] [--array ARRAY] [--verbose] [--dryrun]
     --help|-h
     --version|-v
 ...

@@ -4,7 +4,7 @@ applysplits(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
   
-  local i tsn dir trg tfam apos
+  local i tsn dir trg tfam
   declare -i tsv splitexist size target sibling
 
   for i in ${1}; do
@@ -12,11 +12,18 @@ applysplits(){
     tsv=${i#*=} # target value of split
 
     if [[ $tsn = "${ori[main]}" || $tsn = main ]]; then
+      tsn=${ori[main]}
       trg="X${ori[fam1]}" 
       dir=${ori[resizemain]} size=${ori[sizemain]}
-      # container A vertical position (VPA) is B|D
-      # inverse mainsplit
-      [[ ${i3list[VPA]:-A} =~ B|D ]] && ((tsv *= -1))
+
+      # when --layout option is used, invert split
+      # if families are inverted
+      # container A vertical position (VPA)
+      # inverse mainsplit (2|3 || 1|3)
+      [[ -n ${__o[layout]} ]] \
+        && (( (_isvertical  && i3list[VPA] > 1)    \
+           || (!_isvertical && i3list[VPA] % 2) )) \
+        && ((tsv *= -1))
 
       splitexist=1
     else

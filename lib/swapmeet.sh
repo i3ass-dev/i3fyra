@@ -3,17 +3,22 @@
 swapmeet(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
-  
-  # ivp - "inverted" vertical positions
-  declare -A ivp
-  for k in A B C D; do
-    ivp[${i3list[VP$k]:=$k}]=$k
-  done
 
-  local m1=$1 m2=$2 tmrk k c1 c2 vpk1 vpk2
-  
+  local m1=$1 m2=$2 tmrk k 
+  local c1 c2 i1 i2 v1 v2
+
   declare -i tspl tdim i
   declare -A acn
+
+  declare -a ivp
+  declare -A iip
+
+  iip=([A]=0 [B]=1 [C]=2 [D]=3)
+
+  for k in "${!iip[@]}"; do
+    ivp[${i3list[VP$k]}]=$k
+  done
+
 
   messy "[con_mark=${m1}]"  swap mark "${m2}", mark i34tmp
   messy "[con_mark=${m2}]"  mark "${m1}"
@@ -39,10 +44,12 @@ swapmeet(){
 
     for k in A B C D; do
 
-      vpk1=${i3list[VP$k]:-$k}
-      vpk2=${i3list[VP${acn[$vpk1]}]:-${acn[$vpk1]}}
+      c1=${k}        c2=${acn[$k]}
+      i1=${iip[$c1]} i2=${iip[$c2]}
+      v1=${ivp[$i1]} v2=${ivp[$i2]}
 
-      _v[i34VP$vpk2]=${ivp[$k]}
+      _v[i34VP$v1]=$i2
+      _v[i34VP$v2]=$i1
 
       ((_m[$k] & (_visible | _hidden) )) || continue
       messy "[con_mark=i34$k]" mark "i34tmp$k"
@@ -56,18 +63,12 @@ swapmeet(){
     
   else # swap within family
 
-    c1=${m1#i34} c2=${m2#i34}
+    c1=${m1#i34}   c2=${m2#i34}
+    i1=${iip[$c1]} i2=${iip[$c2]}
+    v1=${ivp[$i1]} v2=${ivp[$i2]}
 
-    ((_isvertical)) \
-      && acn=([A]=B [B]=A [C]=D [D]=C) \
-      || acn=([A]=C [B]=D [C]=A [D]=B)
-
-    for k in "$c1" "$c2"; do
-      vpk1=${i3list[VP$k]:-$k}
-      vpk2=${i3list[VP${acn[$vpk1]}]:-${acn[$vpk1]}}
-
-      _v[i34VP${ivp[$k]}]=$vpk2
-    done
+    _v[i34VP$v1]=$i2
+    _v[i34VP$v2]=$i1
 
     # dont use AFF ?
     tmrk="${i3list[AFF]}"

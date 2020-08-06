@@ -56,12 +56,15 @@ windowmove(){
   ((__o[dryrun])) && [[ -z ${wizoutput:=${i3list[VISWIZ]}} ]] \
     && wizoutput='trgcon=3333 wall=up trgpar=C groupsize=1' 
 
-  : "${wizoutput:="$(i3viswiz -p "$dir" | head -1)"}"
+  : "${wizoutput:=$(i3viswiz -p "$dir" | head -1)}"
 
   eval "$wizoutput"
 
-  ((__o[verbose])) \
-    && ERM "w tx=$trgx ty=$trgy trgcon=$trgcon wall=$wall trgpar=$trgpar groupsize=$groupsize"
+  wizoutput="tx=${trgx:=} ty=${trgy:=} con=${trgcon:=} "
+  wizoutput+="wall=${wall:=} par=${trgpar:=} size=${groupsize:=}"
+
+  ((__o[verbose])) && ERM "w $wizoutput"
+
   unset trgx trgy sx sy sw sh
 
   declare -A swapon

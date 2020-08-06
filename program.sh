@@ -3,8 +3,8 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 0.96
-updated: 2020-07-31 by budRich
+i3fyra - version: 1.018
+updated: 2020-08-06 by budRich
 EOB
 }
 
@@ -38,11 +38,7 @@ main(){
   declare -g  _array
   declare -gA i3list
 
-  [[ -z ${_array:=${__o[array]}} ]] && {
-    mapfile -td $'\n\s' lopt <<< "${__o[target]:-}"
-    _array=$(i3list "${lopt[@]}")
-    unset 'lopt[@]'
-  }
+  [[ -z ${_array:=${__o[array]}} ]] && _array=$(i3list)
 
   eval "$_array"
 
@@ -56,23 +52,52 @@ main(){
   declare -gA _m  # bitwise masks (_m[A]=1)
   declare -ga _n  # bitwise names (_n[1]=A)
   bitwiseinit
+
+  # if "target" is ABCD, transform to vertical position
+
+  local target
+  [[ -n ${__o[layout]} ]] && __o[layout]=${__o[layout]//${ori[main]}/main}
+  target=${__o[show]:-${__o[hide]:-${__o[layout]:-${__o[move]}}}}
+
+  
+  ((__o[force])) || {
+
+    ERM "pppssd $target"
+
+    declare -i vpos
+    q=(A B C D)
+    for k in "${!q[@]}"; do
+      vpos=${i3list[VP${q[$k]}]:=$k}
+      (( k != vpos )) && [[ $target =~ ${q[k]} ]] \
+        && target=${target//${q[$k]}/@@$vpos}
+    done
+
+
+    [[ $target =~ @@ ]] && for k in "${!q[@]}"; do
+      target=${target//@@$k/${q[$k]}}
+    done
+
+    ERM "rrrssd $target"
+
+  }
+  
   
 
   if [[ -n ${__o[show]} ]]; then
-    containershow "${__o[show]}"
+    containershow "$target"
 
   elif [[ -n ${__o[hide]} ]]; then
-    containerhide "${__o[hide]}"
+    containerhide "$target"
 
   elif [[ -n ${__o[layout]} ]]; then
-    applysplits "${__o[layout]}"
+    applysplits "$target"
 
   elif ((__o[float])); then
     togglefloat
     messy "[con_id=${i3list[AWC]}]" focus
 
   elif [[ -n ${__o[move]} ]]; then
-    windowmove "${__o[move]}"
+    windowmove "$target"
     [[ -z ${i3list[SIBFOC]} ]] \
       && messy "[con_id=${i3list[AWC]}]" focus
 
@@ -94,11 +119,11 @@ i3fyra - An advanced, simple grid-based tiling layout
 
 SYNOPSIS
 --------
-i3fyra --show|-s CONTAINER [--array ARRAY] [--verbose] [--dryrun]
-i3fyra --float|-a [--target|-t CRITERION] [--array ARRAY] [--verbose] [--dryrun]
-i3fyra --hide|-z CONTAINER [--array ARRAY] [--verbose] [--dryrun]
-i3fyra --layout|-l LAYOUT [--array ARRAY] [--verbose] [--dryrun]
-i3fyra --move|-m DIRECTION|CONTAINER [--speed|-p INT]  [--target|-t CRITERION] [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --show|-s CONTAINER [--force|-f] [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --float|-a [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --hide|-z CONTAINER [--force|-f] [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --layout|-l LAYOUT [--force|-f] [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --move|-m DIRECTION|CONTAINER [--force|-f] [--speed|-p INT] [--array ARRAY] [--verbose] [--dryrun]
 i3fyra --help|-h
 i3fyra --version|-v
 
@@ -110,6 +135,8 @@ Show target container. If it doesn't exist, it
 will be created and current window will be put in
 it. If it is visible, nothing happens.
 
+
+--force|-f  
 
 --array ARRAY  
 
@@ -125,17 +152,6 @@ containers. The window will be placed in a hidden
 container. If no containers exist, container
 'A'will be created and the window will be put
 there.
-
-
---target|-t CRITERION  
-Criteria is a string passed to i3list to use a
-different target then active window.  
-
-Example:  
-$ i3fyra --move B --target "-i sublime_text" this
-will target the first found window with the
-instance name sublime_text. See i3list(1), for all
-available options.
 
 
 --hide|-z CONTAINER  
@@ -197,9 +213,20 @@ applysplits(){
     tsn=${i%=*} # target name of split
     tsv=${i#*=} # target value of split
 
-    if [[ $tsn = "${ori[main]}" ]]; then
+    if [[ $tsn = "${ori[main]}" || $tsn = main ]]; then
+      tsn=${ori[main]}
       trg="X${ori[fam1]}" 
       dir=${ori[resizemain]} size=${ori[sizemain]}
+
+      # when --layout option is used, invert split
+      # if families are inverted
+      # container A vertical position (VPA)
+      # inverse mainsplit (2|3 || 1|3)
+      [[ -n ${__o[layout]} ]] \
+        && (( (_isvertical  && i3list[VPA] > 1)    \
+           || (!_isvertical && i3list[VPA] % 2) )) \
+        && ((tsv *= -1))
+
       splitexist=1
     else
       trg=${tsn:0:1}
@@ -233,7 +260,7 @@ bitwiseinit() {
   declare -i i
 
   for k in A B C D l r u d; do
-    _m[$k]=$((2<<(2*i++) ))
+    _m[$k]=$((3<<(2*i++) ))
   done
 
   _m[AB]=$((_m[A] | _m[B])) _m[AC]=$((_m[A] | _m[C]))
@@ -250,11 +277,6 @@ bitwiseinit() {
     [[ ${i3list[LHI]} =~ $k ]] && ((_hidden |= _m[$k]))
     [[ ${i3list[LVI]} =~ $k ]] && ((_visible|= _m[$k]))
   done
-
-  ((i3list[POS])) && {
-    # setup pos masks
-    # 00011011
-  }
 }
 
 cleanup() {
@@ -695,10 +717,22 @@ orientationinit() {
 swapmeet(){
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}($*)"
-  
-  local m1=$1 m2=$2 tmrk k
+
+  local m1=$1 m2=$2 tmrk k 
+  local c1 c2 i1 i2 v1 v2
+
   declare -i tspl tdim i
   declare -A acn
+
+  declare -a ivp
+  declare -A iip
+
+  iip=([A]=0 [B]=1 [C]=2 [D]=3)
+
+  for k in "${!iip[@]}"; do
+    ivp[${i3list[VP$k]}]=$k
+  done
+
 
   messy "[con_mark=${m1}]"  swap mark "${m2}", mark i34tmp
   messy "[con_mark=${m2}]"  mark "${m1}"
@@ -721,7 +755,16 @@ swapmeet(){
     _v[i34M${ori[fam1]}]=${i3list[M${ori[fam2]}]}
     _v[i34M${ori[fam2]}]=${i3list[M${ori[fam1]}]}
 
+
     for k in A B C D; do
+
+      c1=${k}        c2=${acn[$k]}
+      i1=${iip[$c1]} i2=${iip[$c2]}
+      v1=${ivp[$i1]} v2=${ivp[$i2]}
+
+      _v[i34VP$v1]=$i2
+      _v[i34VP$v2]=$i1
+
       ((_m[$k] & (_visible | _hidden) )) || continue
       messy "[con_mark=i34$k]" mark "i34tmp$k"
     done
@@ -731,11 +774,15 @@ swapmeet(){
       messy "[con_mark=i34tmp$k]" mark "i34${acn[$k]}"
     done
 
+    
   else # swap within family
 
-    # ((_isvertical)) \
-    #   && acn=([A]=B [B]=A [C]=D [D]=C) \
-    #   || acn=([A]=C [B]=D [C]=A [D]=B)
+    c1=${m1#i34}   c2=${m2#i34}
+    i1=${iip[$c1]} i2=${iip[$c2]}
+    v1=${ivp[$i1]} v2=${ivp[$i2]}
+
+    _v[i34VP$v1]=$i2
+    _v[i34VP$v2]=$i1
 
     # dont use AFF ?
     tmrk="${i3list[AFF]}"
@@ -746,6 +793,7 @@ swapmeet(){
 
   # invert split
   ((tspl+tdim)) && applysplits "$tmrk=$((tdim-tspl))"
+
   messy "[con_id=${i3list[TWC]}]" focus
 }
 
@@ -868,12 +916,15 @@ windowmove(){
   ((__o[dryrun])) && [[ -z ${wizoutput:=${i3list[VISWIZ]}} ]] \
     && wizoutput='trgcon=3333 wall=up trgpar=C groupsize=1' 
 
-  : "${wizoutput:="$(i3viswiz -p "$dir" | head -1)"}"
+  : "${wizoutput:=$(i3viswiz -p "$dir" | head -1)}"
 
   eval "$wizoutput"
 
-  ((__o[verbose])) \
-    && ERM "w tx=$trgx ty=$trgy trgcon=$trgcon wall=$wall trgpar=$trgpar groupsize=$groupsize"
+  wizoutput="tx=${trgx:=} ty=${trgy:=} con=${trgcon:=} "
+  wizoutput+="wall=${wall:=} par=${trgpar:=} size=${groupsize:=}"
+
+  ((__o[verbose])) && ERM "w $wizoutput"
+
   unset trgx trgy sx sy sw sh
 
   declare -A swapon
@@ -884,7 +935,7 @@ windowmove(){
   ((_isvertical)) \
     && sibdir=$((_m[l]|_m[r])) \
     || sibdir=$((_m[u]|_m[d]))
-
+    
   target=${_m[${i3list[TWP]}]}
   family=${_m[${i3list[TFF]}]}
   sibling=${_m[${i3list[TFS]}]}
@@ -962,8 +1013,8 @@ windowmove(){
 declare -A __o
 options="$(
   getopt --name "[ERROR]:i3fyra" \
-    --options "s:at:z:l:m:p:hv" \
-    --longoptions "show:,array:,verbose,dryrun,float,target:,hide:,layout:,move:,speed:,help,version," \
+    --options "s:faz:l:m:p:hv" \
+    --longoptions "show:,force,array:,verbose,dryrun,float,hide:,layout:,move:,speed:,help,version," \
     -- "$@" || exit 98
 )"
 
@@ -973,11 +1024,11 @@ unset options
 while true; do
   case "$1" in
     --show       | -s ) __o[show]="${2:-}" ; shift ;;
+    --force      | -f ) __o[force]=1 ;; 
     --array      ) __o[array]="${2:-}" ; shift ;;
     --verbose    ) __o[verbose]=1 ;; 
     --dryrun     ) __o[dryrun]=1 ;; 
     --float      | -a ) __o[float]=1 ;; 
-    --target     | -t ) __o[target]="${2:-}" ; shift ;;
     --hide       | -z ) __o[hide]="${2:-}" ; shift ;;
     --layout     | -l ) __o[layout]="${2:-}" ; shift ;;
     --move       | -m ) __o[move]="${2:-}" ; shift ;;

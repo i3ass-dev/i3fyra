@@ -23,11 +23,7 @@ main(){
   declare -g  _array
   declare -gA i3list
 
-  [[ -z ${_array:=${__o[array]}} ]] && {
-    mapfile -td $'\n\s' lopt <<< "${__o[target]:-}"
-    _array=$(i3list "${lopt[@]}")
-    unset 'lopt[@]'
-  }
+  [[ -z ${_array:=${__o[array]}} ]] && _array=$(i3list)
 
   eval "$_array"
 
@@ -40,7 +36,6 @@ main(){
   # create bitmasks
   declare -gA _m  # bitwise masks (_m[A]=1)
   declare -ga _n  # bitwise names (_n[1]=A)
-  declare -gA _p  # bitwise vertical pos
   bitwiseinit
 
   # if "target" is ABCD, transform to vertical position
@@ -49,23 +44,28 @@ main(){
   [[ -n ${__o[layout]} ]] && __o[layout]=${__o[layout]//${ori[main]}/main}
   target=${__o[show]:-${__o[hide]:-${__o[layout]:-${__o[move]}}}}
 
+  
+  ((__o[force])) || {
 
-  [[ $target =~ [ABCD] ]] && {
+    ERM "pppssd $target"
+
+    declare -i vpos
     q=(A B C D)
-    for k in ${!q[@]}; do
-      vpos=${i3list[VP${q[$k]}]:=${q[$k]}}
-      [[ ${q[$k]} != "$vpos" ]] && {
-        target=${target//${q[$k]}/@@$k}
-      }
+    for k in "${!q[@]}"; do
+      vpos=${i3list[VP${q[$k]}]:=$k}
+      (( k != vpos )) && [[ $target =~ ${q[k]} ]] \
+        && target=${target//${q[$k]}/@@$vpos}
     done
 
-    ERM "rrrv $target"
-    for k in ${!q[@]}; do
-      target=${target//@@$k/${i3list[VP${q[$k]}]}}
+
+    [[ $target =~ @@ ]] && for k in "${!q[@]}"; do
+      target=${target//@@$k/${q[$k]}}
     done
 
     ERM "rrrssd $target"
+
   }
+  
   
 
   if [[ -n ${__o[show]} ]]; then

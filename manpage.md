@@ -3,11 +3,11 @@
 SYNOPSIS
 --------
 ```text
-i3fyra --show|-s CONTAINER [--array ARRAY] [--verbose] [--dryrun]
-i3fyra --float|-a [--target|-t CRITERION] [--array ARRAY] [--verbose] [--dryrun]
-i3fyra --hide|-z CONTAINER [--array ARRAY] [--verbose] [--dryrun]
-i3fyra --layout|-l LAYOUT [--array ARRAY] [--verbose] [--dryrun]
-i3fyra --move|-m DIRECTION|CONTAINER [--speed|-p INT]  [--target|-t CRITERION] [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --show|-s CONTAINER [--force|-f] [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --float|-a [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --hide|-z CONTAINER [--force|-f] [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --layout|-l LAYOUT [--force|-f] [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --move|-m DIRECTION|CONTAINER [--force|-f] [--speed|-p INT] [--array ARRAY] [--verbose] [--dryrun]
 i3fyra --help|-h
 i3fyra --version|-v
 ```
@@ -69,6 +69,8 @@ Show target container. If it doesn't exist, it
 will be created and current window will be put in
 it. If it is visible, nothing happens.
 
+`--force`|`-f`  
+
 `--array` ARRAY  
 
 `--verbose`  
@@ -83,16 +85,6 @@ containers. The window will be placed in a hidden
 container. If no containers exist, container
 'A'will be created and the window will be put
 there.
-
-`--target`|`-t` CRITERION  
-Criteria is a string passed to i3list to use a
-different target then active window.  
-
-Example:  
-`$ i3fyra --move B --target "-i sublime_text"`
-this will target the first found window with the
-instance name *sublime_text*. See i3list(1), for
-all available options.
 
 `--hide`|`-z` CONTAINER  
 Hide target containers if visible.  
