@@ -19,7 +19,6 @@ swapmeet(){
     ivp[${i3list[VP$k]}]=$k
   done
 
-
   messy "[con_mark=${m1}]"  swap mark "${m2}", mark i34tmp
   messy "[con_mark=${m2}]"  mark "${m1}"
   messy "[con_mark=i34tmp]" mark "${m2}"

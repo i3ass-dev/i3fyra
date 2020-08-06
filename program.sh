@@ -3,7 +3,7 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 1.018
+i3fyra - version: 1.019
 updated: 2020-08-06 by budRich
 EOB
 }
@@ -732,7 +732,6 @@ swapmeet(){
   for k in "${!iip[@]}"; do
     ivp[${i3list[VP$k]}]=$k
   done
-
 
   messy "[con_mark=${m1}]"  swap mark "${m2}", mark i34tmp
   messy "[con_mark=${m2}]"  mark "${m1}"
