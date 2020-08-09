@@ -18,7 +18,7 @@ applysplits(){
 
       # when --layout option is used, invert split
       # if families are inverted
-      # container A vertical position (VPA)
+      # container A virtual position (VPA)
       # inverse mainsplit (2|3 || 1|3)
       [[ -n ${__o[layout]} ]] \
         && (( (_isvertical  && i3list[VPA] > 1)    \
