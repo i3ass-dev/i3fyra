@@ -38,17 +38,16 @@ main(){
   declare -ga _n  # bitwise names (_n[1]=A)
   bitwiseinit
 
-  # if "target" is ABCD, transform to vertical position
-
   local target
+  
+  # rename mainsplit to "main" in layout otherwise
+  # it gets messed up when transforming the container names
+  # applysplits() accepts both main=SIZE, AB=SIZE, and AC=SIZE
   [[ -n ${__o[layout]} ]] && __o[layout]=${__o[layout]//${ori[main]}/main}
   target=${__o[show]:-${__o[hide]:-${__o[layout]:-${__o[move]}}}}
 
-  
+  # if target is A|B|C|D, "transform" to virtual position
   ((__o[force])) || {
-
-    ERM "pppssd $target"
-
     declare -i vpos
     q=(A B C D)
     for k in "${!q[@]}"; do
@@ -57,13 +56,9 @@ main(){
         && target=${target//${q[$k]}/@@$vpos}
     done
 
-
     [[ $target =~ @@ ]] && for k in "${!q[@]}"; do
       target=${target//@@$k/${q[$k]}}
     done
-
-    ERM "rrrssd $target"
-
   }
   
   

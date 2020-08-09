@@ -3,8 +3,8 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 1.019
-updated: 2020-08-06 by budRich
+i3fyra - version: 1.02
+updated: 2020-08-10 by budRich
 EOB
 }
 
@@ -41,12 +41,25 @@ it. If it is visible, nothing happens.
 
 
 --force|-f  
+If set virtual positions will be ignored.
+
 
 --array ARRAY  
+ARRAY should be the output of i3list. It is used
+to improve speed when i3fyra is executed from a
+script that already have the array, f.i. i3run and
+i3Kornhe.  
+
 
 --verbose  
+If set information about execution will be
+printed to stderr.
+
 
 --dryrun  
+If set no window manipulation will be done during
+execution.
+
 
 --float|-a  
 Autolayout. If current window is tiled: floating

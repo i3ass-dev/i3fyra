@@ -43,9 +43,9 @@ swapmeet(){
 
     for k in A B C D; do
 
-      c1=${k}        c2=${acn[$k]}
-      i1=${iip[$c1]} i2=${iip[$c2]}
-      v1=${ivp[$i1]} v2=${ivp[$i2]}
+      c1=${k}             c2=${acn[$k]}
+      i1=${iip[$c1]}      i2=${iip[$c2]}
+      v1=${ivp[$i1]:=$i1} v2=${ivp[$i2]:=$i2}
 
       _v[i34VP$v1]=$i2
       _v[i34VP$v2]=$i1

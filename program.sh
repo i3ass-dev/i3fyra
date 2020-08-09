@@ -3,8 +3,8 @@
 ___printversion(){
   
 cat << 'EOB' >&2
-i3fyra - version: 1.019
-updated: 2020-08-06 by budRich
+i3fyra - version: 1.02
+updated: 2020-08-10 by budRich
 EOB
 }
 
@@ -53,17 +53,16 @@ main(){
   declare -ga _n  # bitwise names (_n[1]=A)
   bitwiseinit
 
-  # if "target" is ABCD, transform to vertical position
-
   local target
+  
+  # rename mainsplit to "main" in layout otherwise
+  # it gets messed up when transforming the container names
+  # applysplits() accepts both main=SIZE, AB=SIZE, and AC=SIZE
   [[ -n ${__o[layout]} ]] && __o[layout]=${__o[layout]//${ori[main]}/main}
   target=${__o[show]:-${__o[hide]:-${__o[layout]:-${__o[move]}}}}
 
-  
+  # if target is A|B|C|D, "transform" to virtual position
   ((__o[force])) || {
-
-    ERM "pppssd $target"
-
     declare -i vpos
     q=(A B C D)
     for k in "${!q[@]}"; do
@@ -72,13 +71,9 @@ main(){
         && target=${target//${q[$k]}/@@$vpos}
     done
 
-
     [[ $target =~ @@ ]] && for k in "${!q[@]}"; do
       target=${target//@@$k/${q[$k]}}
     done
-
-    ERM "rrrssd $target"
-
   }
   
   
@@ -137,12 +132,25 @@ it. If it is visible, nothing happens.
 
 
 --force|-f  
+If set virtual positions will be ignored.
+
 
 --array ARRAY  
+ARRAY should be the output of i3list. It is used
+to improve speed when i3fyra is executed from a
+script that already have the array, f.i. i3run and
+i3Kornhe.  
+
 
 --verbose  
+If set information about execution will be
+printed to stderr.
+
 
 --dryrun  
+If set no window manipulation will be done during
+execution.
+
 
 --float|-a  
 Autolayout. If current window is tiled: floating
@@ -536,7 +544,20 @@ familyhide(){
     fi
   done
 
-  messy "[con_mark=i34X${tfam}]" move scratchpad
+  declare -i famw famh famx famy fams
+
+  fams=$(( (_isvertical ? i3list[WFH] : i3list[WFW]) - i3list[S${ori[main]}] ))
+  ((fams < 0)) && ((fams *= -1))
+
+  famw=$((_isvertical ? i3list[WFW] : fams ))
+  famh=$((_isvertical ? fams : i3list[WFH]))
+  famx=$((_isvertical ? 0 : i3list[S${ori[main]}]))
+  famy=$((_isvertical ? i3list[S${ori[main]}] : 0))
+
+  messy "[con_mark=i34X${tfam}]" floating enable, \
+    resize set "$famw" "$famh",                   \
+    move absolute position "$famx" px "$famy" px, \
+    move scratchpad
 
   _v["i34F${tfam}"]=${famchk}
   _v["i34M${ori[main]}"]=${i3list[S${ori[main]}]:=0}
@@ -757,9 +778,9 @@ swapmeet(){
 
     for k in A B C D; do
 
-      c1=${k}        c2=${acn[$k]}
-      i1=${iip[$c1]} i2=${iip[$c2]}
-      v1=${ivp[$i1]} v2=${ivp[$i2]}
+      c1=${k}             c2=${acn[$k]}
+      i1=${iip[$c1]}      i2=${iip[$c2]}
+      v1=${ivp[$i1]:=$i1} v2=${ivp[$i2]:=$i2}
 
       _v[i34VP$v1]=$i2
       _v[i34VP$v2]=$i1

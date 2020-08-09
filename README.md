@@ -63,12 +63,20 @@ created and current window will be put in it. If it is
 visible, nothing happens.
 
 `--force`|`-f`  
+If set virtual positions will be ignored.
 
 `--array` ARRAY  
+ARRAY should be the output of `i3list`. It is used to
+improve speed when **i3fyra** is executed from a script that
+already have the array, f.i. **i3run** and **i3Kornhe**.  
 
 `--verbose`  
+If set information about execution will be printed to
+**stderr**.
 
 `--dryrun`  
+If set no window manipulation will be done during
+execution.
 
 `--float`|`-a`  
 Autolayout. If current window is tiled: floating enabled If
@@ -154,6 +162,94 @@ also change names, so **B** becomes **A**, **A** becomes
 
 
 If this doesn't make sense, check out this demonstration on youtube: https://youtu.be/kU8gb6WLFk8
+## updates
+
+### 2020.08.08
+
+Now keeps track of the *virtual position* of a window. What
+this means is that if you have the following window rule
+defined in your **i3 config file**:  
+
+```
+for_window [instance=irssi class=URxvt] focus;exec --no-startup-id i3fyra --move A
+```
+
+
+And spawn a window matching the criteria it will get
+*moved* to the A container, which by default is the top-left
+container.  
+
+```
+AAB
+AAD
+CCD
+```
+
+
+Just as before the containers can be toggled and swapped by
+using `i3fyra --move DIRECTION` (where direction is
+up,down,left or right). And if the A container would have
+focus, and we execute `--move left` it would hide the B and
+D containers:
+
+```
+AAA
+AAA
+CCC
+```
+
+
+If we in this state would execute `--move right` (while the
+A container is focused), it would move the A and C container
+to the right and show the B and D containers to the left,
+but i3fyra will also internally rename all the containers:  
+
+```
+ABB
+ABB
+CDD
+```
+
+
+This used to mean that if we now would spawn a window
+matching our previously defined window rule, it would still
+get placed in the top-left container. This is where things
+are different now. In **i3list** there are four new keys,
+`[VPA],[VPB],[VPC] and [VPD]` which contains a number
+between zero and three (0-3). If i3list would get executed
+with the scenario above we would get the following results:  
+
+```
+i3list[VPA]=1
+i3list[VPB]=0
+i3list[VPC]=3
+i3list[VPD]=2
+```
+
+
+the integers corresponds to the index of the hypothetical
+array `a=([0]=A [1]=B [2]=C [3]=D)`, and with this
+information we can see that when we want to send a window to
+container A, we test the virtual position, and see that A is
+positioned at 1 (*B*), be placed in **B** instead. In most
+cases this is the desired result, but sometimes it isn't,
+and for those cases one can use the `--force` option (which
+is new) to ignore the virtual positions. But this is
+probably nothing that anyone needs to worry about, and is
+more or less only used internally in **i3fyra**, **i3menu**
+and **i3run**. This transformation to virtual positions of
+the containers also works with the `--layout` option.
+
+A lot of performance and stability improvements has been
+done in this update, and toggling layouts and containers now
+works much better and predictable.  
+
+**Removed**  `--target` option. I found myself never using
+and it just created awkward cornercase issues.  
+
+**Added** `--force`, `--array`, `--verbose` and `--dryrun`
+options.
+
 
 
 

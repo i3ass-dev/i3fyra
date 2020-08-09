@@ -23,7 +23,20 @@ familyhide(){
     fi
   done
 
-  messy "[con_mark=i34X${tfam}]" move scratchpad
+  declare -i famw famh famx famy fams
+
+  fams=$(( (_isvertical ? i3list[WFH] : i3list[WFW]) - i3list[S${ori[main]}] ))
+  ((fams < 0)) && ((fams *= -1))
+
+  famw=$((_isvertical ? i3list[WFW] : fams ))
+  famh=$((_isvertical ? fams : i3list[WFH]))
+  famx=$((_isvertical ? 0 : i3list[S${ori[main]}]))
+  famy=$((_isvertical ? i3list[S${ori[main]}] : 0))
+
+  messy "[con_mark=i34X${tfam}]" floating enable, \
+    resize set "$famw" "$famh",                   \
+    move absolute position "$famx" px "$famy" px, \
+    move scratchpad
 
   _v["i34F${tfam}"]=${famchk}
   _v["i34M${ori[main]}"]=${i3list[S${ori[main]}]:=0}

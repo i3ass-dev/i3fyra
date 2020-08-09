@@ -1,5 +1,5 @@
 .nh
-.TH I3FYRA 1 2020\-08\-06 Linux "User Manuals"
+.TH I3FYRA 1 2020\-08\-10 Linux "User Manuals"
 .SH NAME
 .PP
 \fB\fCi3fyra\fR \- An advanced, simple grid\-based tiling
@@ -93,15 +93,28 @@ it. If it is visible, nothing happens.
 
 .PP
 \fB\fC\-\-force\fR|\fB\fC\-f\fR
+.br
+If set virtual positions will be ignored.
 
 .PP
 \fB\fC\-\-array\fR ARRAY
+.br
+ARRAY should be the output of \fB\fCi3list\fR\&. It is
+used to improve speed when \fBi3fyra\fP is executed
+from a script that already have the array, f.i.
+\fBi3run\fP and \fBi3Kornhe\fP\&.
 
 .PP
 \fB\fC\-\-verbose\fR
+.br
+If set information about execution will be
+printed to \fBstderr\fP\&.
 
 .PP
 \fB\fC\-\-dryrun\fR
+.br
+If set no window manipulation will be done during
+execution.
 
 .PP
 \fB\fC\-\-float\fR|\fB\fC\-a\fR

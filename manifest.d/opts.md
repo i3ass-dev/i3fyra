@@ -1,3 +1,15 @@
+# options-force-description
+If set virtual positions will be ignored.
+
+# options-array-description
+ARRAY should be the output of `i3list`. It is used to improve speed when **i3fyra** is executed from a script that already have the array, f.i. **i3run** and **i3Kornhe**.  
+
+# options-verbose-description
+If set information about execution will be printed to **stderr**.
+
+# options-dryrun-description
+If set no window manipulation will be done during execution.
+
 # options-float-description
 
 Autolayout. If current window is tiled: floating enabled If window is floating, it will be put in a visible container. If there is no visible containers. The window will be placed in a hidden container. If no containers exist, container 'A'will be created and the window will be put there.
