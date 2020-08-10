@@ -2,7 +2,7 @@
 
 main(){
 
-  __o[verbose]=1
+  # __o[verbose]=1
 
   ((__o[verbose])) && {
     declare -gi _stamp
