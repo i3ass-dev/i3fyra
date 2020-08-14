@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+
+___printversion(){
+  
+cat << 'EOB' >&2
+i3fyra - version: 1.028
+updated: 2020-08-12 by budRich
+EOB
+}
+
+
+# environment variables
+: "${I3FYRA_MAIN_CONTAINER:=A}"
+: "${I3FYRA_WS:=}"
+: "${I3FYRA_ORIENTATION:=horizontal}"
+
+
+___printhelp(){
+  
+cat << 'EOB' >&2
+i3fyra - An advanced, simple grid-based tiling layout
+
+
+SYNOPSIS
+--------
+i3fyra --show|-s CONTAINER [--force|-f] [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --float|-a [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --hide|-z CONTAINER [--force|-f] [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --layout|-l LAYOUT [--force|-f] [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --move|-m DIRECTION|CONTAINER [--force|-f] [--speed|-p INT] [--array ARRAY] [--verbose] [--dryrun]
+i3fyra --help|-h
+i3fyra --version|-v
+
+OPTIONS
+-------
+
+--show|-s CONTAINER  
+Show target container. If it doesn't exist, it
+will be created and current window will be put in
+it. If it is visible, nothing happens.
+
+
+--force|-f  
+If set virtual positions will be ignored.
+
+
+--array ARRAY  
+ARRAY should be the output of i3list. It is used
+to improve speed when i3fyra is executed from a
+script that already have the array, f.i. i3run and
+i3Kornhe.  
+
+
+--verbose  
+If set information about execution will be
+printed to stderr.
+
+
+--dryrun  
+If set no window manipulation will be done during
+execution.
+
+
+--float|-a  
+Autolayout. If current window is tiled: floating
+enabled If window is floating, it will be put in a
+visible container. If there is no visible
+containers. The window will be placed in a hidden
+container. If no containers exist, container
+'A'will be created and the window will be put
+there.
+
+
+--hide|-z CONTAINER  
+Hide target containers if visible.  
+
+
+--layout|-l LAYOUT  
+alter splits Changes the given splits. INT is a
+distance in pixels. AB is on X axis from the left
+side if INT is positive, from the right side if it
+is negative. AC and BD is on Y axis from the top
+if INT is positive, from the bottom if it is
+negative. The whole argument needs to be quoted.
+Example:  
+$ i3fyra --layout 'AB=-300 BD=420'  
+
+
+
+--move|-m CONTAINER  
+Moves current window to target container, either
+defined by it's name or it's position relative to
+the current container with a direction:
+[l|left][r|right][u|up][d|down] If the container
+doesnt exist it is created. If argument is a
+direction and there is no container in that
+direction, Connected container(s) visibility is
+toggled. If current window is floating or not
+inside ABCD, normal movement is performed.
+Distance for moving floating windows with this
+action can be defined with the --speed option.
+Example: $ i3fyra --speed 30 -m r Will move
+current window 30 pixels to the right, if it is
+floating.
+
+
+--speed|-p INT  
+Distance in pixels to move a floating window.
+Defaults to 30.
+
+
+--help|-h  
+Show help and exit.
+
+
+--version|-v  
+Show version and exit
+EOB
+}
+
+
+for ___f in "${___dir}/lib"/*; do
+  source "$___f"
+done
+
+declare -A __o
+options="$(
+  getopt --name "[ERROR]:i3fyra" \
+    --options "s:faz:l:m:p:hv" \
+    --longoptions "show:,force,array:,verbose,dryrun,float,hide:,layout:,move:,speed:,help,version," \
+    -- "$@" || exit 98
+)"
+
+eval set -- "$options"
+unset options
+
+while true; do
+  case "$1" in
+    --show       | -s ) __o[show]="${2:-}" ; shift ;;
+    --force      | -f ) __o[force]=1 ;; 
+    --array      ) __o[array]="${2:-}" ; shift ;;
+    --verbose    ) __o[verbose]=1 ;; 
+    --dryrun     ) __o[dryrun]=1 ;; 
+    --float      | -a ) __o[float]=1 ;; 
+    --hide       | -z ) __o[hide]="${2:-}" ; shift ;;
+    --layout     | -l ) __o[layout]="${2:-}" ; shift ;;
+    --move       | -m ) __o[move]="${2:-}" ; shift ;;
+    --speed      | -p ) __o[speed]="${2:-}" ; shift ;;
+    --help       | -h ) ___printhelp && exit ;;
+    --version    | -v ) ___printversion && exit ;;
+    -- ) shift ; break ;;
+    *  ) break ;;
+  esac
+  shift
+done
+
+[[ ${__lastarg:="${!#:-}"} =~ ^--$|${0}$ ]] \
+  && __lastarg="" 
+
+
+
+
