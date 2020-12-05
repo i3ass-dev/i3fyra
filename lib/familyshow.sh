@@ -37,10 +37,11 @@ familyshow(){
 
   i3list[S${ori[main]}]=${ori[sizemainhalf]}
 
-  ((newfamily)) || messy "[con_mark=i34X${ourfam}]"    \
-                   move to workspace "${i3list[WSF]}", \
-                   floating disable,                   \
-                   move to mark "i34X${ori[main]}"
+  ((newfamily)) || {
+    messy "[con_mark=i34X${ourfam}]" move to workspace "${i3list[WSF]}"
+    messy "[con_mark=i34X${ori[main]}]" focus, split h
+    messy "[con_mark=i34X${ourfam}]" floating disable
+  }
 
   # if $ourfam is the first and the otherfamily
   # is visible swap'em
