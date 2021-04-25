@@ -24,15 +24,5 @@ varset() {
 
     messy "[con_id=${i3list[RID]}] mark --add $new_mark"
 
-    # re="\"(${key}=[^\"]+)\""
-    # [[ $json =~ $re ]] && mark="${BASH_REMATCH[1]}"
-
-    # if [[ -z $mark ]]; then
-    #   dummywindow "${key}=${val}"
-    #   messy "[con_mark=${key}]" move scratchpad
-    # else
-    #   messy "[con_mark=${key}]" mark "${key}=${val}"
-    # fi
-    # unset mark
   done
 }
