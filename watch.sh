@@ -20,6 +20,7 @@ while read -r ; do
         "${cmd1[@]}"
       done > /dev/null 2>&1
     )
+    echo -n $'\n'LOC: 
     cat "$_dir/main.sh" "$_dir/lib/"* | grep -E '^\s*[^#].+$' | wc -l
   }
 done < <(

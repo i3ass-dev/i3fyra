@@ -11,6 +11,7 @@ cleanup() {
   ((${#_v[@]})) && varset
 
   [[ -n $_msgstring ]] && i3-msg "${qflag:-}" "$_msgstring"
+  
   ((${#_r[@]})) && {
     for k in "${!_r[@]}"; do s+="[$k] ${_r[$k]};" ; done
     i3-msg "${qflag:-}" "$s"

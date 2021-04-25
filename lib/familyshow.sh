@@ -39,7 +39,7 @@ familyshow(){
 
   ((newfamily)) || {
     messy "[con_mark=i34X${ourfam}]" move to workspace "${i3list[WSF]}"
-    messy "[con_mark=i34X${ori[main]}]" focus, split h
+    messy "[con_mark=i34X${ori[main]}]" focus, split "${ori[charmain]}"
     messy "[con_mark=i34X${ourfam}]" floating disable
   }
 
