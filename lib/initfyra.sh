@@ -14,13 +14,8 @@ initfyra() {
     eval "$(i3list)"
     i3list[WFH]=${i3list[WAH]}
     i3list[WFW]=${i3list[WAW]}
-
-    i3list > ~/i3l
-    i3-msg -t get_tree | jq > ~/i3t
   }
 
-  
-  
   wsid=${i3list[WAI]}
   messy "[con_id=$wsid]"           \
     mark "i34X${ori[main]}",       \

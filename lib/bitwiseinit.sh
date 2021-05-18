@@ -16,9 +16,6 @@ bitwiseinit() {
   
   for k in "${!_m[@]}"; do _n[${_m[$k]}]=$k ; done
 
-  # i3list[LEX]=DCBA # Existing containers (LVI+LHI)
-  # i3list[LVI]=DCBA # Visible i3fyra containers
-
   for k in A B C D ; do
     [[ ${i3list[LHI]} =~ $k ]] && ((_hidden |= _m[$k]))
     [[ ${i3list[LVI]} =~ $k ]] && ((_visible|= _m[$k]))
