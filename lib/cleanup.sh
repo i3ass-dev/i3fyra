@@ -4,19 +4,19 @@ cleanup() {
 
   ((__o[verbose])) && ERM "f ${FUNCNAME[0]}()"
 
-  local qflag k s
+  ((${#mark_vars[@]})) && varset
 
-  ((__o[verbose])) || qflag='-q'
+  [[ -n $_msgstring ]] \
+    && i3-msg "$_qflag" "${_msgstring%;}"
 
-  ((${#_v[@]})) && varset
-
-  [[ -n $_msgstring ]] && i3-msg "${qflag:-}" "$_msgstring"
-  
-  ((${#_r[@]})) && {
-    for k in "${!_r[@]}"; do s+="[$k] ${_r[$k]};" ; done
-    i3-msg "${qflag:-}" "$s"
+  ((${#new_size[@]})) && {
+    for k in "${!new_size[@]}"; do 
+      _sizestring+="[$k] ${new_size[$k]};"
+    done
+    i3-msg "${qflag:-}" "${_sizestring%;}"
   }
 
+  # /home/bud/tmp/trees/maketrees.sh
   ((__o[verbose])) && {
     local delta=$(( ($(date +%s%N)-_stamp) /1000 ))
     local time=$(((delta / 1000) % 1000))

@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/bin/bash
 
 set -E
 trap '[ "$?" -ne 98 ] || exit 98' ERR
@@ -11,3 +11,4 @@ ERH(){
   [[ -n "$*" ]] && printf '\n%s\n' "$*" >&2
   exit 98
 }
+
