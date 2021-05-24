@@ -61,34 +61,22 @@ main(){
     done
   }
   
-  
-
   if [[ -n ${__o[show]} ]]; then
     containershow "$target"
-
   elif [[ -n ${__o[hide]} ]]; then
     containerhide "$target"
-
   elif [[ -n ${__o[layout]} ]]; then
     applysplits "$target"
-
   elif ((__o[float])); then
     togglefloat
     messy "[con_id=${i3list[AWC]}]" focus
-
   elif [[ -n ${__o[move]} ]]; then
     windowmove "$target"
     [[ -z ${i3list[SIBFOC]} ]] \
       && messy "[con_id=${i3list[AWC]}]" focus
-
   else
     ERH "no valid options $*"
-
   fi
-
-  # [[ -n ${i3list[SIBFOC]} ]] \
-  #   && messy "[con_mark=i34${i3list[SIBFOC]}]" focus child
-
 }
 
 ___source="$(readlink -f "${BASH_SOURCE[0]}")"  #bashbud
