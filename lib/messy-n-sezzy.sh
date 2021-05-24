@@ -2,9 +2,14 @@
 
 messy() {
   # arguments are valid i3-msg arguments
-  # execute all commands at once in cleanup()
+  # separate resize commands and execute
+  # all commands at once in cleanup()
   (( __o[verbose] )) && ERM "m $*"
   (( __o[dryrun]  )) || _msgstring+="$*;"
+  # (( __o[dryrun]  )) || {
+  #   i3-msg "$*"
+  #   sleep .555
+  # }
 }
 
 sezzy() {
@@ -12,5 +17,5 @@ sezzy() {
   shift
   args=$*
   (( __o[verbose] )) && ERM "r [$criterion] $args"
-  (( __o[dryrun]  )) || _r["$criterion"]=$args
+  (( __o[dryrun]  )) || new_size["$criterion"]=$args
 }
