@@ -32,6 +32,9 @@ main(){
     float  ) float_toggle          ;;
 
   esac
+
+  [[ $action =~ layout|hide ]] \
+    || messy "[con_id=${i3list[TWC]}]" focus
 }
 
 ___source="$(readlink -f "${BASH_SOURCE[0]}")"  #bashbud
