@@ -27,7 +27,13 @@ initialize_globals() {
     # we set the mark/var here
 
     ((__o[verbose])) && ERM INIT FYRA_WS
-    i3var set i3fyra_ws "${I3FYRA_WS:-$(i3get -r w)}"
+
+    [[ $I3FYRA_WS ]] || {
+      eval "$(i3list)"
+      I3FYRA_WS=\"${i3list[WAN]}\"
+    }
+
+    i3var set i3fyra_ws "$I3FYRA_WS"
     i3var set i34ORI "$I3FYRA_ORIENTATION"
   }
 
