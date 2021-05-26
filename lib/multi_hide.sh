@@ -10,7 +10,6 @@ multi_hide(){
   for (( i = 0; i < ${#arg}; i++ )); do
     trg=${arg:$i:1}
     [[ ${i3list[LVI]} =~ $trg ]] && trgs+=$trg
-    # ((_m[$trg] & _visible)) && trgs+=$trg
   done
 
   ((${#trgs})) || return
