@@ -16,9 +16,8 @@ synopsis: |
     --show|-s CONTAINER [--force|-f]
     --float|-a
     --hide|-z CONTAINER [--force|-f]
-    --layout|-l LAYOUT [--force|-f]
+    --layout|-l LAYOUT [--force|-f] [--array ARRAY] [--verbose] [--dryrun]
     --move|-m DIRECTION|CONTAINER [--force|-f] [--speed|-p INT]
-   [--array ARRAY] [--verbose] [--dryrun]
     --help|-h
     --version|-v
 ...

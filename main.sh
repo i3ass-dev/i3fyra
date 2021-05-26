@@ -12,7 +12,8 @@ main(){
 
   initialize_globals
 
-  ((__o[force])) || arg=$(virtual_position "$arg")
+  [[ ${__o[layout]} ]] && arg=${arg/${ori[main]}/main}
+  ((__o[force]))       || arg=$(virtual_position "$arg")
 
   case "$_action" in
 
@@ -33,7 +34,7 @@ main(){
 
   esac
 
-  [[ $action =~ layout|hide ]] \
+  [[ $_action =~ layout|hide ]] \
     || messy "[con_id=${i3list[TWC]}]" focus
 }
 
