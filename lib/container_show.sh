@@ -48,5 +48,4 @@ container_show() {
       apply_splits "${target_family}=$tspl"
     }
   }
-
 }
