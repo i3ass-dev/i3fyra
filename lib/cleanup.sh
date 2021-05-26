@@ -16,7 +16,6 @@ cleanup() {
     i3-msg "${qflag:-}" "${_sizestring%;}"
   }
 
-  # /home/bud/tmp/trees/maketrees.sh
   ((__o[verbose])) && {
     local delta=$(( ($(date +%s%N)-_stamp) /1000 ))
     local time=$(((delta / 1000) % 1000))
